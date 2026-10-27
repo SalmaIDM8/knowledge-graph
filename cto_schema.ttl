@@ -1,0 +1,442 @@
+###############################################################################
+#  CTO - Trekking Company Ontology  (RDFS vocabulary)
+#
+#  Namespaces (one for the vocabulary, one for the instances, as recommended
+#  in the course "Best practices for KR in RDF and RDFS"):
+#     cto: <http://ns.cto-trekking.org/schema#>   classes and properties
+#     d:   <http://ns.cto-trekking.org/data#>     instances (data files)
+#
+#  Naming conventions: PascalCase for classes, camelCase for properties.
+#  Every class and property has an rdfs:label (en + fr), and an rdfs:comment
+#  when its meaning is not obvious.
+#
+#  RDFS describes, it does not constrain: rdfs:domain / rdfs:range only allow
+#  a reasoner to INFER types. Cardinalities and value ranges (e.g. difficulty
+#  in 1..5) are checked in cto_shapes.ttl.
+#
+#  Reused vocabularies:
+#     foaf:    Person, Organization, givenName, familyName, mbox, name
+#     geo:     WGS84 lat / long
+#     schema:  birthDate
+#     owl:     sameAs (links to DBpedia only for resources that ARE identical)
+###############################################################################
+
+@prefix cto:     <http://ns.cto-trekking.org/schema#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
+
+<http://ns.cto-trekking.org/schema>
+    rdfs:label   "CTO - Trekking Company Ontology"@en ,
+                 "CTO - Ontologie d'une agence de trekking"@fr ;
+    rdfs:comment "RDFS vocabulary describing the catalogue (treks, trails, places), the operations (departures, bookings, rentals) and the guides of a trekking company."@en .
+
+
+###############################################################################
+#  1. PLACES
+###############################################################################
+
+cto:Place a rdfs:Class ;
+    rdfs:label "place"@en , "lieu"@fr ;
+    rdfs:comment "Any geographic entity: mountain range, country, town, summit."@en .
+
+cto:MountainRange a rdfs:Class ;
+    rdfs:subClassOf cto:Place ;
+    rdfs:label "mountain range"@en , "massif montagneux"@fr ;
+    rdfs:comment "A range or sub-range (Alps, Mont Blanc massif, Himalayas...). Sub-ranges are linked to their parent range with cto:locatedIn."@en .
+
+cto:Country a rdfs:Class ;
+    rdfs:subClassOf cto:Place ;
+    rdfs:label "country"@en , "pays"@fr .
+
+cto:Settlement a rdfs:Class ;
+    rdfs:subClassOf cto:Place ;
+    rdfs:label "settlement"@en , "localité"@fr ;
+    rdfs:comment "A city, town or village: trek start/end points, overnight stops and home towns of persons."@en .
+
+cto:Summit a rdfs:Class ;
+    rdfs:subClassOf cto:Place ;
+    rdfs:label "summit"@en , "sommet"@fr .
+
+cto:locatedIn a rdf:Property ;
+    rdfs:label "located in"@en , "situé dans"@fr ;
+    rdfs:comment "Spatial inclusion between places (sub-range in range, town in country...). Transitive by nature, but RDFS cannot say so: queries use the property path cto:locatedIn+ ."@en ;
+    rdfs:domain cto:Place ;
+    rdfs:range  cto:Place .
+
+cto:altitude a rdf:Property ;
+    rdfs:label "altitude (m)"@en , "altitude (m)"@fr ;
+    rdfs:comment "Altitude in metres. For places linked to DBpedia, a local copy of dbo:elevation."@en ;
+    rdfs:domain cto:Place ;
+    rdfs:range  xsd:decimal .
+
+
+###############################################################################
+#  2. CATALOGUE: TRAILS, TREKS, STAGES, PACKAGES
+###############################################################################
+
+cto:HikingTrail a rdfs:Class ;
+    rdfs:label "hiking trail"@en , "sentier de randonnée"@fr ;
+    rdfs:comment "A physical, waymarked path (GR20, Tour du Mont Blanc...). This is the resource that is owl:sameAs the DBpedia resource - NOT the commercial trek."@en .
+
+cto:lengthKm a rdf:Property ;
+    rdfs:label "length (km)"@en , "longueur (km)"@fr ;
+    rdfs:domain cto:HikingTrail ;
+    rdfs:range  xsd:decimal .
+
+cto:Offer a rdfs:Class ;
+    rdfs:label "offer"@en , "offre"@fr ;
+    rdfs:comment "Anything sold with a base price (trek or tour package). Introduced so that cto:basePrice has ONE domain: in RDFS, two domains would mean the intersection of the classes, not their union."@en .
+
+cto:Trek a rdfs:Class ;
+    rdfs:subClassOf cto:Offer ;
+    rdfs:label "trek"@en , "trek"@fr ;
+    rdfs:comment "A commercial trekking product: an itinerary with a duration, a difficulty and requirements. It is scheduled through departures."@en .
+
+# Types of trips: a trek may have several types (e.g. SummitAscent and CampingTrek)
+cto:HutToHutTrek a rdfs:Class ;
+    rdfs:subClassOf cto:Trek ;
+    rdfs:label "hut-to-hut trek"@en , "trek de refuge en refuge"@fr .
+
+cto:CampingTrek a rdfs:Class ;
+    rdfs:subClassOf cto:Trek ;
+    rdfs:label "camping trek"@en , "trek en bivouac"@fr .
+
+cto:SummitAscent a rdfs:Class ;
+    rdfs:subClassOf cto:Trek ;
+    rdfs:label "summit ascent"@en , "ascension"@fr .
+
+cto:TourPackage a rdfs:Class ;
+    rdfs:subClassOf cto:Offer ;
+    rdfs:label "tour package"@en , "séjour tout compris"@fr ;
+    rdfs:comment "A trek bundled with extras (hotel, transfers...). Its base price is the supplement per person."@en .
+
+cto:basePrice a rdf:Property ;
+    rdfs:label "base price (EUR)"@en , "prix de base (EUR)"@fr ;
+    rdfs:domain cto:Offer ;
+    rdfs:range  xsd:decimal .
+
+cto:includesTrek a rdf:Property ;
+    rdfs:label "includes trek"@en , "inclut le trek"@fr ;
+    rdfs:domain cto:TourPackage ;
+    rdfs:range  cto:Trek .
+
+cto:inMountainRange a rdf:Property ;
+    rdfs:label "in mountain range"@en , "dans le massif"@fr ;
+    rdfs:comment "Most specific range where the trek takes place. Combined with cto:locatedIn* it answers 'treks in the Alps'."@en ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:MountainRange .
+
+cto:followsTrail a rdf:Property ;
+    rdfs:label "follows trail"@en , "suit le sentier"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:HikingTrail .
+
+cto:startPoint a rdf:Property ;
+    rdfs:label "start point"@en , "point de départ"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:Settlement .
+
+cto:endPoint a rdf:Property ;
+    rdfs:label "end point"@en , "point d'arrivée"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:Settlement .
+
+cto:highestPoint a rdf:Property ;
+    rdfs:label "highest point"@en , "point culminant"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:Summit .
+
+cto:durationDays a rdf:Property ;
+    rdfs:label "duration (days)"@en , "durée (jours)"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  xsd:integer .
+
+cto:difficulty a rdf:Property ;
+    rdfs:label "difficulty"@en , "difficulté"@fr ;
+    rdfs:comment "From 1 (easy) to 5 (very demanding)."@en ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  xsd:integer .
+
+cto:maxGroupSize a rdf:Property ;
+    rdfs:label "maximum group size"@en , "taille maximale du groupe"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  xsd:integer .
+
+cto:requiresCertification a rdf:Property ;
+    rdfs:label "requires certification"@en , "exige la certification"@fr ;
+    rdfs:comment "A certification the guide of the trek must hold. Eligible guides are computed by a query, not stored."@en ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:Certification .
+
+cto:requiresEquipment a rdf:Property ;
+    rdfs:label "requires equipment"@en , "exige l'équipement"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:Equipment .
+
+cto:notRecommendedFor a rdf:Property ;
+    rdfs:label "not recommended for"@en , "déconseillé en cas de"@fr ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  cto:MedicalCondition .
+
+cto:itinerary a rdf:Property ;
+    rdfs:label "itinerary"@en , "itinéraire"@fr ;
+    rdfs:comment "Ordered, closed list of the stages of a trek, as an RDF collection (rdf:List): here the order and completeness of the list are meaningful."@en ;
+    rdfs:domain cto:Trek ;
+    rdfs:range  rdf:List .
+
+cto:Stage a rdfs:Class ;
+    rdfs:label "stage"@en , "étape"@fr ;
+    rdfs:comment "One day of a trek itinerary."@en .
+
+cto:dayNumber a rdf:Property ;
+    rdfs:label "day number"@en , "numéro du jour"@fr ;
+    rdfs:domain cto:Stage ;
+    rdfs:range  xsd:integer .
+
+cto:passesBy a rdf:Property ;
+    rdfs:label "passes by"@en , "passe par"@fr ;
+    rdfs:comment "A place reached during the stage (summit, village...)."@en ;
+    rdfs:domain cto:Stage ;
+    rdfs:range  cto:Place .
+
+cto:overnightAt a rdf:Property ;
+    rdfs:label "overnight at"@en , "nuit à"@fr ;
+    rdfs:domain cto:Stage ;
+    rdfs:range  cto:Place .
+
+
+###############################################################################
+#  3. DEPARTURES
+###############################################################################
+
+cto:Departure a rdfs:Class ;
+    rdfs:label "departure"@en , "départ"@fr ;
+    rdfs:comment "A scheduled session of a trek with dates, a capacity and guides. Bookings are made on departures, not on treks."@en .
+
+cto:ofTrek a rdf:Property ;
+    rdfs:label "of trek"@en , "du trek"@fr ;
+    rdfs:domain cto:Departure ;
+    rdfs:range  cto:Trek .
+
+cto:startDate a rdf:Property ;
+    rdfs:label "start date"@en , "date de début"@fr ;
+    rdfs:domain cto:Departure ;
+    rdfs:range  xsd:date .
+
+cto:endDate a rdf:Property ;
+    rdfs:label "end date"@en , "date de fin"@fr ;
+    rdfs:domain cto:Departure ;
+    rdfs:range  xsd:date .
+
+cto:capacity a rdf:Property ;
+    rdfs:label "capacity"@en , "nombre de places"@fr ;
+    rdfs:domain cto:Departure ;
+    rdfs:range  xsd:integer .
+
+cto:hasGuide a rdf:Property ;
+    rdfs:label "has guide"@en , "a pour guide"@fr ;
+    rdfs:domain cto:Departure ;
+    rdfs:range  cto:Guide .
+
+cto:leadGuide a rdf:Property ;
+    rdfs:subPropertyOf cto:hasGuide ;
+    rdfs:label "lead guide"@en , "guide responsable"@fr ;
+    rdfs:comment "The guide in charge. Being a sub-property, every lead guide is also a guide of the departure."@en ;
+    rdfs:domain cto:Departure ;
+    rdfs:range  cto:Guide .
+
+
+###############################################################################
+#  4. PERSONS
+###############################################################################
+
+cto:Client a rdfs:Class ;
+    rdfs:subClassOf foaf:Person ;
+    rdfs:label "client"@en , "client"@fr .
+
+cto:Guide a rdfs:Class ;
+    rdfs:subClassOf foaf:Person ;
+    rdfs:label "guide"@en , "guide"@fr ;
+    rdfs:comment "A trekking guide. Their rating is not stored: it is computed from reviews."@en .
+
+# Shared by clients and guides: the domain is their common superclass
+# foaf:Person (two domains cto:Client and cto:Guide would mean "Client AND Guide").
+# Names, e-mail and birth date reuse foaf:givenName, foaf:familyName,
+# foaf:mbox and schema:birthDate (the birth date is stored, not the age).
+
+cto:speaks a rdf:Property ;
+    rdfs:label "speaks"@en , "parle"@fr ;
+    rdfs:domain foaf:Person ;
+    rdfs:range  cto:Language .
+
+cto:livesIn a rdf:Property ;
+    rdfs:label "lives in"@en , "habite à"@fr ;
+    rdfs:domain foaf:Person ;
+    rdfs:range  cto:Settlement .
+
+cto:nationality a rdf:Property ;
+    rdfs:label "nationality"@en , "nationalité"@fr ;
+    rdfs:domain foaf:Person ;
+    rdfs:range  cto:Country .
+
+cto:hasCertification a rdf:Property ;
+    rdfs:label "has certification"@en , "a la certification"@fr ;
+    rdfs:domain cto:Guide ;
+    rdfs:range  cto:Certification .
+
+cto:knowsArea a rdf:Property ;
+    rdfs:label "knows area"@en , "connaît la zone"@fr ;
+    rdfs:comment "A range where the guide is experienced (and, through cto:locatedIn*, everything in it)."@en ;
+    rdfs:domain cto:Guide ;
+    rdfs:range  cto:MountainRange .
+
+cto:hasMedicalCondition a rdf:Property ;
+    rdfs:label "has medical condition"@en , "a pour condition médicale"@fr ;
+    rdfs:domain cto:Client ;
+    rdfs:range  cto:MedicalCondition .
+
+cto:insuredBy a rdf:Property ;
+    rdfs:label "insured by"@en , "assuré par"@fr ;
+    rdfs:domain cto:Client ;
+    rdfs:range  cto:Insurer .
+
+cto:Language a rdfs:Class ;
+    rdfs:label "language"@en , "langue"@fr .
+
+cto:Certification a rdfs:Class ;
+    rdfs:label "certification"@en , "certification"@fr ;
+    rdfs:comment "A diploma or licence (IFMGA mountain guide, Wilderness First Responder...)."@en .
+
+cto:MedicalCondition a rdfs:Class ;
+    rdfs:label "medical condition"@en , "condition médicale"@fr .
+
+cto:Insurer a rdfs:Class ;
+    rdfs:subClassOf foaf:Organization ;
+    rdfs:label "insurer"@en , "assureur"@fr .
+
+
+###############################################################################
+#  5. BOOKINGS
+###############################################################################
+
+cto:Booking a rdfs:Class ;
+    rdfs:label "booking"@en , "réservation"@fr ;
+    rdfs:comment "A reservation by a client for one or several participants on a departure."@en .
+
+cto:bookedBy a rdf:Property ;
+    rdfs:label "booked by"@en , "réservée par"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  cto:Client .
+
+cto:forDeparture a rdf:Property ;
+    rdfs:label "for departure"@en , "pour le départ"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  cto:Departure .
+
+cto:bookingDate a rdf:Property ;
+    rdfs:label "booking date"@en , "date de réservation"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  xsd:date .
+
+cto:numberOfParticipants a rdf:Property ;
+    rdfs:label "number of participants"@en , "nombre de participants"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  xsd:integer .
+
+cto:amountPaid a rdf:Property ;
+    rdfs:label "amount paid (EUR)"@en , "montant payé (EUR)"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  xsd:decimal .
+
+cto:withPackage a rdf:Property ;
+    rdfs:label "with package"@en , "avec le séjour"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  cto:TourPackage .
+
+cto:BookingStatus a rdfs:Class ;
+    rdfs:label "booking status"@en , "statut de réservation"@fr ;
+    rdfs:comment "Closed list: cto:Pending, cto:Confirmed, cto:Cancelled."@en .
+
+cto:status a rdf:Property ;
+    rdfs:label "status"@en , "statut"@fr ;
+    rdfs:domain cto:Booking ;
+    rdfs:range  cto:BookingStatus .
+
+cto:Pending   a cto:BookingStatus ; rdfs:label "pending"@en ,   "en attente"@fr .
+cto:Confirmed a cto:BookingStatus ; rdfs:label "confirmed"@en , "confirmée"@fr .
+cto:Cancelled a cto:BookingStatus ; rdfs:label "cancelled"@en , "annulée"@fr ;
+    rdfs:comment "No longer takes places on the departure."@en .
+
+
+###############################################################################
+#  6. EQUIPMENT AND RENTALS
+###############################################################################
+
+cto:Equipment a rdfs:Class ;
+    rdfs:label "equipment"@en , "équipement"@fr ;
+    rdfs:comment "A model of rental equipment with a stock (tents, poles, crampons... are instances, not classes)."@en .
+
+cto:CampingGear a rdfs:Class ;
+    rdfs:subClassOf cto:Equipment ;
+    rdfs:label "camping gear"@en , "matériel de bivouac"@fr .
+
+cto:TechnicalGear a rdfs:Class ;
+    rdfs:subClassOf cto:Equipment ;
+    rdfs:label "technical gear"@en , "matériel technique"@fr ;
+    rdfs:comment "Mountaineering equipment (crampons, ice axe, harness)."@en .
+
+cto:stockQuantity a rdf:Property ;
+    rdfs:label "stock quantity"@en , "quantité en stock"@fr ;
+    rdfs:domain cto:Equipment ;
+    rdfs:range  xsd:integer .
+
+cto:dailyRentalPrice a rdf:Property ;
+    rdfs:label "daily rental price (EUR)"@en , "prix de location par jour (EUR)"@fr ;
+    rdfs:domain cto:Equipment ;
+    rdfs:range  xsd:decimal .
+
+cto:Rental a rdfs:Class ;
+    rdfs:label "rental"@en , "location"@fr ;
+    rdfs:comment "Rental of some units of an equipment model, attached to a booking (which gives the client and the dates)."@en .
+
+cto:forBooking a rdf:Property ;
+    rdfs:label "for booking"@en , "pour la réservation"@fr ;
+    rdfs:domain cto:Rental ;
+    rdfs:range  cto:Booking .
+
+cto:rentedItem a rdf:Property ;
+    rdfs:label "rented item"@en , "article loué"@fr ;
+    rdfs:domain cto:Rental ;
+    rdfs:range  cto:Equipment .
+
+cto:quantity a rdf:Property ;
+    rdfs:label "quantity"@en , "quantité"@fr ;
+    rdfs:domain cto:Rental ;
+    rdfs:range  xsd:integer .
+
+
+###############################################################################
+#  7. REVIEWS
+###############################################################################
+
+cto:Review a rdfs:Class ;
+    rdfs:label "review"@en , "avis"@fr ;
+    rdfs:comment "A client's rating of a guide. Guide ratings are averaged from reviews."@en .
+
+cto:author a rdf:Property ;
+    rdfs:label "author"@en , "auteur"@fr ;
+    rdfs:domain cto:Review ;
+    rdfs:range  cto:Client .
+
+cto:aboutGuide a rdf:Property ;
+    rdfs:label "about guide"@en , "concerne le guide"@fr ;
+    rdfs:domain cto:Review ;
+    rdfs:range  cto:Guide .
+
+cto:rating a rdf:Property ;
+    rdfs:label "rating"@en , "note"@fr ;
+    rdfs:comment "Score from 1 to 5."@en ;
+    rdfs:domain cto:Review ;
+    rdfs:range  xsd:integer .
