@@ -9,8 +9,9 @@
 #     sh:Violation (default)  the data is wrong and must be fixed
 #     sh:Warning              the data is allowed but should be checked
 #
-#  Validate with:  pyshacl -s cto_shapes.ttl -e cto_schema.ttl -i rdfs cto_data_xxx.ttl
-#  (-i rdfs: subclasses are inferred, e.g. a cto:SummitAscent is also a cto:Trek)
+#  Validate ALL data files together with:  python validate.py
+#  (RDFS inference: subclasses are inferred, e.g. a cto:SummitAscent is also
+#  a cto:Trek; also run automatically on every pull request by GitHub Actions)
 ###############################################################################
 
 @prefix cto:     <http://ns.cto-trekking.org/schema#> .
@@ -434,6 +435,27 @@ ctosh:LabelledShape a sh:NodeShape ;
         sh:path rdfs:label ;
         sh:minCount 1 ;
         sh:datatype rdf:langString
+    ] .
+
+# No duplicates across data files: the operations data must REUSE the IRIs of
+# the catalogue (d:french, d:certIFMGA, d:trekTMB...), not declare them again.
+# Two resources of the same class with the same label (case ignored) = duplicate.
+# Persons are not checked: two clients can have the same name.
+ctosh:NoDuplicateShape a sh:NodeShape ;
+    sh:targetClass cto:Language , cto:Certification , cto:MedicalCondition , cto:Insurer ,
+                   cto:Place , cto:HikingTrail , cto:Offer , cto:Equipment ;
+    sh:sparql [
+        sh:message "Duplicate of {?other} (same class, same label \"{?label}\"): reuse the existing IRI."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?other ?label WHERE {
+                $this rdfs:label ?label ; a ?class .
+                ?other rdfs:label ?label2 ; a ?class .
+                FILTER (?class IN (cto:Language, cto:Certification, cto:MedicalCondition,
+                                   cto:Insurer, cto:Place, cto:HikingTrail, cto:Offer, cto:Equipment))
+                FILTER ($this != ?other && LCASE(STR(?label)) = LCASE(STR(?label2)))
+            }
+        """
     ] .
 
 

@@ -35,10 +35,33 @@ Ces pièges font échouer la validation :
 | `owl:sameAs` | `dbr:Tour_du_Mont_Blanc` (uniquement DBpedia) |
 | `cto:status` | `cto:Pending`, `cto:Confirmed` ou `cto:Cancelled` |
 
-## 4. Vérifier avant chaque commit
+## 4. Réutiliser les IRI du catalogue (ne jamais les recréer)
+
+Les données des opérations (`cto_data_operations.ttl`) **pointent vers** les ressources déclarées dans `cto_data_catalog.ttl`. On ne les redéclare pas.
+
+| Pour… | On réutilise | ❌ À ne pas faire |
+|---|---|---|
+| `cto:speaks` | `d:french`, `d:english`, `d:italian`, `d:spanish`, `d:german`, `d:nepali`, `d:arabic` | `d:francais a cto:Language` |
+| `cto:hasCertification` | `d:certIFMGA`, `d:certIML`, `d:certWFR`, `d:certHighAltitude` | `d:ifmga a cto:Certification` |
+| `cto:hasMedicalCondition` | `d:heartCondition`, `d:asthma`, `d:kneeProblems`, `d:vertigo`, `d:altitudeSickness` | |
+| `cto:knowsArea` | `d:alps`, `d:montBlancMassif`, `d:himalayas`, `d:andes`, `d:highAtlas`, `d:pyrenees`, `d:dolomites`… | |
+| `cto:livesIn`, `cto:nationality` | villes (`d:chamonix`…) et pays (`d:france`…) du catalogue, ou une **nouvelle** ville si elle n'existe pas encore | redéclarer `d:france` |
+| `cto:ofTrek` | `d:trekTMB`, `d:trekTMBExpress`, `d:trekMontBlanc`, `d:trekGR20`, `d:trekEBC`, `d:trekAnnapurna`, `d:trekIncaTrail`, `d:trekToubkal`, `d:trekTreCime`, `d:trekVignemale` | |
+| `cto:withPackage` | `d:packTMBComfort`, `d:packEverestKathmandu`, `d:packMachuPicchu` | |
+| `cto:rentedItem` | `d:tent2p`, `d:sleepingBag`, `d:sleepingMat`, `d:crampons`, `d:iceAxe`, `d:harness`, `d:helmet`, `d:trekkingPoles`, `d:downJacket`, `d:headlamp` | |
+
+La liste complète est dans `cto_data_catalog.ttl`, rangée par sections.
+
+**C'est vérifié automatiquement :**
+- **faute de frappe** (`d:englsh`) → erreur, car la ressource n'existe pas (pas de label, pas de type) ;
+- **doublon** (une 2ᵉ langue « French ») → erreur *« Duplicate of d:french … reuse the existing IRI »*.
+
+## 5. Vérifier avant chaque commit
 
 ```bash
-pyshacl -s cto_shapes.ttl -e cto_schema.ttl -i rdfs cto_data_xxx.ttl
+python validate.py
 ```
 
-Le résultat doit être `Conforms: True`. Sinon, le message indique la ressource fautive (`Focus Node`) et la règle non respectée (`Message`).
+Le script valide **tous les fichiers `cto_data*.ttl` ensemble** (c'est indispensable pour vérifier les liens entre fichiers). Le résultat doit être `Conforms: True`. Sinon, le message indique la ressource fautive (`Focus Node`) et la règle non respectée (`Message`).
+
+Cette même validation est lancée **automatiquement par GitHub sur chaque Pull Request** (onglet *Checks*) : ✅ = données valides, ❌ = cliquer sur *Details* pour voir l'erreur.
