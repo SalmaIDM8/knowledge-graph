@@ -1,0 +1,615 @@
+###############################################################################
+#  CTO - Trekking Company Ontology  (SHACL shapes)
+#
+#  RDFS (cto_schema.ttl) only DESCRIBES the vocabulary; these shapes CONSTRAIN
+#  the data: cardinalities, datatypes, value ranges, closed lists of values,
+#  comparisons between two properties, and business rules written in SPARQL.
+#
+#  Severity:
+#     sh:Violation (default)  the data is wrong and must be fixed
+#     sh:Warning              the data is allowed but should be checked
+#
+#  Validate with:  pyshacl -s cto_shapes.ttl -e cto_schema.ttl -i rdfs cto_data_xxx.ttl
+#  (-i rdfs: subclasses are inferred, e.g. a cto:SummitAscent is also a cto:Trek)
+###############################################################################
+
+@prefix cto:     <http://ns.cto-trekking.org/schema#> .
+@prefix ctosh:   <http://ns.cto-trekking.org/shapes#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix sh:      <http://www.w3.org/ns/shacl#> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
+@prefix schema:  <http://schema.org/> .
+@prefix geo:     <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+# Prefixes made available to the SPARQL-based constraints below
+<http://ns.cto-trekking.org/shapes>
+    sh:declare [ sh:prefix "cto" ; sh:namespace "http://ns.cto-trekking.org/schema#"^^xsd:anyURI ] ,
+               [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] .
+
+
+###############################################################################
+#  1. PLACES AND TRAILS
+###############################################################################
+
+ctosh:PlaceShape a sh:NodeShape ;
+    sh:targetClass cto:Place ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:uniqueLang true ;            # at most one label per language
+        sh:message "A place needs a label with a language tag (one per language)."@en
+    ] , [
+        sh:path geo:lat ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive -90 ; sh:maxInclusive 90
+    ] , [
+        sh:path geo:long ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive -180 ; sh:maxInclusive 180
+    ] , [
+        sh:path cto:altitude ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:maxInclusive 8849            # Everest
+    ] , [
+        sh:path cto:locatedIn ;
+        sh:class cto:Place
+    ] , [
+        sh:path owl:sameAs ;
+        sh:nodeKind sh:IRI ;
+        sh:pattern "^http://dbpedia\\.org/resource/" ;
+        sh:message "owl:sameAs must point to a DBpedia resource."@en
+    ] .
+
+# A place cannot be located in itself, even through a chain of cto:locatedIn
+ctosh:NoLocationCycleShape a sh:NodeShape ;
+    sh:targetSubjectsOf cto:locatedIn ;
+    sh:sparql [
+        sh:message "Cycle in cto:locatedIn: the place is (indirectly) located in itself."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this WHERE { $this cto:locatedIn+ $this . }
+        """
+    ] .
+
+# Summits must have an altitude (used to find the highest point of a trek)
+ctosh:SummitShape a sh:NodeShape ;
+    sh:targetClass cto:Summit ;
+    sh:property [ sh:path cto:altitude ; sh:minCount 1 ] .
+
+ctosh:HikingTrailShape a sh:NodeShape ;
+    sh:targetClass cto:HikingTrail ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:datatype rdf:langString
+    ] , [
+        sh:path cto:lengthKm ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minExclusive 0
+    ] , [
+        sh:path owl:sameAs ;
+        sh:nodeKind sh:IRI ;
+        sh:pattern "^http://dbpedia\\.org/resource/"
+    ] .
+
+
+###############################################################################
+#  2. CATALOGUE: OFFERS, TREKS, STAGES, PACKAGES
+###############################################################################
+
+# Shared by Trek and TourPackage (through their superclass cto:Offer)
+ctosh:OfferShape a sh:NodeShape ;
+    sh:targetClass cto:Offer ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:datatype rdf:langString ;
+        sh:uniqueLang true
+    ] , [
+        sh:path cto:basePrice ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive 0
+    ] .
+
+ctosh:TrekShape a sh:NodeShape ;
+    sh:targetClass cto:Trek ;
+    sh:property [
+        sh:path cto:difficulty ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ; sh:maxInclusive 5 ;
+        sh:message "Difficulty is mandatory and goes from 1 to 5."@en
+    ] , [
+        sh:path cto:durationDays ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1
+    ] , [
+        sh:path cto:maxGroupSize ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1
+    ] , [
+        sh:path cto:startPoint ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Settlement
+    ] , [
+        sh:path cto:endPoint ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Settlement
+    ] , [
+        sh:path cto:inMountainRange ;
+        sh:minCount 1 ;
+        sh:class cto:MountainRange
+    ] , [
+        sh:path cto:followsTrail ;
+        sh:maxCount 1 ;
+        sh:class cto:HikingTrail
+    ] , [
+        sh:path cto:highestPoint ;
+        sh:maxCount 1 ;
+        sh:class cto:Summit
+    ] , [
+        sh:path cto:requiresCertification ;
+        sh:class cto:Certification
+    ] , [
+        sh:path cto:requiresEquipment ;
+        sh:class cto:Equipment
+    ] , [
+        sh:path cto:notRecommendedFor ;
+        sh:class cto:MedicalCondition
+    ] , [
+        sh:path cto:itinerary ;
+        sh:maxCount 1 ;
+        sh:node ctosh:ListShape
+    ] , [
+        # every member of the rdf:List: path itinerary / rest* / first
+        sh:path ( cto:itinerary [ sh:zeroOrMorePath rdf:rest ] rdf:first ) ;
+        sh:class cto:Stage ;
+        sh:message "Every element of the itinerary must be a cto:Stage."@en
+    ] .
+
+# A summit ascent must say which summit it climbs
+ctosh:SummitAscentShape a sh:NodeShape ;
+    sh:targetClass cto:SummitAscent ;
+    sh:property [
+        sh:path cto:highestPoint ;
+        sh:minCount 1 ;
+        sh:message "A summit ascent must have a cto:highestPoint."@en
+    ] .
+
+# The itinerary has one stage per day, numbered 1, 2, 3... in list order
+ctosh:ItineraryShape a sh:NodeShape ;
+    sh:targetSubjectsOf cto:itinerary ;
+    sh:sparql [
+        sh:message "The itinerary does not have one stage per day (count = {?n}, durationDays = {?d})."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?d (COUNT(?stage) AS ?n) WHERE {
+                $this cto:durationDays ?d ;
+                      cto:itinerary/rdf:rest*/rdf:first ?stage .
+            }
+            GROUP BY $this ?d
+            HAVING (COUNT(?stage) != ?d)
+        """
+    ] , [
+        sh:message "Stage {?stage} is at position {?pos} in the list but has dayNumber {?day}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?stage ?day (COUNT(?mid) AS ?pos) WHERE {
+                $this cto:itinerary ?list .
+                # position of ?node = number of list nodes from the head to ?node
+                ?list rdf:rest* ?mid .
+                ?mid  rdf:rest* ?node .
+                ?node rdf:first ?stage .
+                ?stage cto:dayNumber ?day .
+            }
+            GROUP BY $this ?stage ?day
+            HAVING (COUNT(?mid) != ?day)
+        """
+    ] .
+
+# Well-formed rdf:List (closed list: ends with rdf:nil)
+ctosh:ListShape a sh:NodeShape ;
+    sh:property [
+        sh:path [ sh:zeroOrMorePath rdf:rest ] ;
+        sh:hasValue rdf:nil ;
+        sh:message "The itinerary list must end with rdf:nil."@en
+    ] .
+
+ctosh:StageShape a sh:NodeShape ;
+    sh:targetClass cto:Stage ;
+    sh:property [
+        sh:path cto:dayNumber ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1
+    ] , [
+        sh:path cto:overnightAt ;
+        sh:maxCount 1 ;
+        sh:class cto:Place
+    ] , [
+        sh:path cto:passesBy ;
+        sh:class cto:Place
+    ] .
+
+ctosh:TourPackageShape a sh:NodeShape ;
+    sh:targetClass cto:TourPackage ;
+    sh:property [
+        sh:path cto:includesTrek ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Trek
+    ] .
+
+
+###############################################################################
+#  3. DEPARTURES
+###############################################################################
+
+ctosh:DepartureShape a sh:NodeShape ;
+    sh:targetClass cto:Departure ;
+    sh:property [
+        sh:path cto:ofTrek ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Trek
+    ] , [
+        sh:path cto:startDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date ;
+        sh:lessThan cto:endDate ;        # comparison between two properties
+        sh:message "A departure needs one start date, before its end date."@en
+    ] , [
+        sh:path cto:endDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date
+    ] , [
+        sh:path cto:capacity ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1
+    ] , [
+        sh:path cto:leadGuide ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Guide ;
+        sh:message "A departure has exactly one lead guide."@en
+    ] , [
+        sh:path cto:hasGuide ;
+        sh:class cto:Guide
+    ] ;
+
+    # Capacity cannot exceed the maximum group size of the trek
+    sh:sparql [
+        sh:message "Capacity {?cap} is above the trek's maximum group size {?max}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?cap ?max WHERE {
+                $this cto:capacity ?cap ; cto:ofTrek/cto:maxGroupSize ?max .
+                FILTER (?cap > ?max)
+            }
+        """
+    ] ,
+
+    # Overbooking: participants of non-cancelled bookings <= capacity
+    [
+        sh:message "Overbooked: {?booked} participants for a capacity of {?cap}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?cap (SUM(?p) AS ?booked) WHERE {
+                $this cto:capacity ?cap .
+                ?b cto:forDeparture $this ; cto:numberOfParticipants ?p .
+                FILTER NOT EXISTS { ?b cto:status cto:Cancelled }
+            }
+            GROUP BY $this ?cap
+            HAVING (SUM(?p) > ?cap)
+        """
+    ] ,
+
+    # The lead guide must hold every certification required by the trek
+    [
+        sh:message "Lead guide {?g} lacks the required certification {?c}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?g ?c WHERE {
+                $this cto:leadGuide ?g ; cto:ofTrek/cto:requiresCertification ?c .
+                FILTER NOT EXISTS { ?g cto:hasCertification ?c }
+            }
+        """
+    ] ,
+
+    # A guide cannot be on two departures whose dates overlap
+    [
+        sh:message "Guide {?g} is also on departure {?other}, whose dates overlap."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?g ?other WHERE {
+                $this  cto:hasGuide|cto:leadGuide ?g ;
+                       cto:startDate ?s1 ; cto:endDate ?e1 .
+                ?other cto:hasGuide|cto:leadGuide ?g ;
+                       cto:startDate ?s2 ; cto:endDate ?e2 .
+                FILTER ($this != ?other && ?s1 <= ?e2 && ?s2 <= ?e1)
+            }
+        """
+    ] .
+
+# Soft rule: the lead guide should know the mountain range of the trek
+ctosh:GuideKnowsAreaShape a sh:NodeShape ;
+    sh:targetClass cto:Departure ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        sh:message "Lead guide {?g} does not know the area of this trek."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?g WHERE {
+                $this cto:leadGuide ?g ; cto:ofTrek/cto:inMountainRange ?range .
+                # the guide knows the range itself or a range containing it
+                FILTER NOT EXISTS { ?range cto:locatedIn* ?known . ?g cto:knowsArea ?known }
+            }
+        """
+    ] .
+
+
+###############################################################################
+#  4. PERSONS
+###############################################################################
+
+# Common to clients and guides (domain foaf:Person, as in the schema)
+ctosh:PersonShape a sh:NodeShape ;
+    sh:targetClass cto:Client , cto:Guide ;
+    sh:property [
+        sh:path foaf:givenName ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string
+    ] , [
+        sh:path foaf:familyName ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:string
+    ] , [
+        sh:path foaf:mbox ;
+        sh:nodeKind sh:IRI ;
+        sh:pattern "^mailto:[^@]+@[^@]+\\.[a-z]+$" ;
+        sh:message "foaf:mbox must be a mailto: IRI, e.g. <mailto:marie@example.org>."@en
+    ] , [
+        sh:path schema:birthDate ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:date
+    ] , [
+        sh:path cto:livesIn ;
+        sh:maxCount 1 ;
+        sh:class cto:Settlement
+    ] , [
+        sh:path cto:nationality ;
+        sh:class cto:Country
+    ] , [
+        sh:path cto:speaks ;
+        sh:class cto:Language
+    ] .
+
+ctosh:ClientShape a sh:NodeShape ;
+    sh:targetClass cto:Client ;
+    # the agency must be able to reach the client: e-mail or phone
+    sh:or (
+        [ sh:path foaf:mbox ;  sh:minCount 1 ]
+        [ sh:path foaf:phone ; sh:minCount 1 ]
+    ) ;
+    sh:message "A client needs an e-mail (foaf:mbox) or a phone number (foaf:phone)."@en ;
+    sh:property [
+        sh:path cto:insuredBy ;
+        sh:maxCount 1 ;
+        sh:class cto:Insurer
+    ] , [
+        sh:path cto:hasMedicalCondition ;
+        sh:class cto:MedicalCondition
+    ] .
+
+ctosh:GuideShape a sh:NodeShape ;
+    sh:targetClass cto:Guide ;
+    sh:not [ sh:class cto:Client ] ;     # staff do not book their own treks
+    sh:property [
+        sh:path cto:speaks ;
+        sh:minCount 1 ;
+        sh:message "A guide speaks at least one language."@en
+    ] , [
+        sh:path cto:hasCertification ;
+        sh:minCount 1 ;
+        sh:class cto:Certification
+    ] , [
+        sh:path cto:knowsArea ;
+        sh:minCount 1 ;
+        sh:class cto:MountainRange
+    ] .
+
+# Reference classes: just a label in at least one language
+ctosh:LabelledShape a sh:NodeShape ;
+    sh:targetClass cto:Language , cto:Certification , cto:MedicalCondition , cto:Insurer ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:datatype rdf:langString
+    ] .
+
+
+###############################################################################
+#  5. BOOKINGS
+###############################################################################
+
+ctosh:BookingShape a sh:NodeShape ;
+    sh:targetClass cto:Booking ;
+    sh:property [
+        sh:path cto:bookedBy ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Client
+    ] , [
+        sh:path cto:forDeparture ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Departure
+    ] , [
+        sh:path cto:bookingDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date
+    ] , [
+        sh:path cto:numberOfParticipants ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1
+    ] , [
+        sh:path cto:amountPaid ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive 0
+    ] , [
+        sh:path cto:status ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( cto:Pending cto:Confirmed cto:Cancelled ) ;   # closed list
+        sh:message "Status must be cto:Pending, cto:Confirmed or cto:Cancelled."@en
+    ] , [
+        sh:path cto:withPackage ;
+        sh:maxCount 1 ;
+        sh:class cto:TourPackage
+    ] ;
+
+    # The booking is made before the departure starts
+    sh:sparql [
+        sh:message "Booking date {?bd} is not before the departure start {?sd}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?bd ?sd WHERE {
+                $this cto:bookingDate ?bd ; cto:forDeparture/cto:startDate ?sd .
+                FILTER (?bd >= ?sd)
+            }
+        """
+    ] ,
+
+    # The chosen package must include the trek of the departure
+    [
+        sh:message "Package {?pkg} does not include the trek of this departure."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?pkg WHERE {
+                $this cto:withPackage ?pkg ; cto:forDeparture/cto:ofTrek ?trek .
+                FILTER NOT EXISTS { ?pkg cto:includesTrek ?trek }
+            }
+        """
+    ] .
+
+# Soft rule: the client has a medical condition the trek is not recommended for
+ctosh:MedicalWarningShape a sh:NodeShape ;
+    sh:targetClass cto:Booking ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        sh:message "The client has condition {?cond}: this trek is not recommended."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?cond WHERE {
+                $this cto:bookedBy/cto:hasMedicalCondition ?cond ;
+                      cto:forDeparture/cto:ofTrek/cto:notRecommendedFor ?cond .
+            }
+        """
+    ] .
+
+
+###############################################################################
+#  6. EQUIPMENT AND RENTALS
+###############################################################################
+
+ctosh:EquipmentShape a sh:NodeShape ;
+    sh:targetClass cto:Equipment ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:datatype rdf:langString
+    ] , [
+        sh:path cto:stockQuantity ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 0
+    ] , [
+        sh:path cto:dailyRentalPrice ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:decimal ;
+        sh:minInclusive 0
+    ] .
+
+ctosh:RentalShape a sh:NodeShape ;
+    sh:targetClass cto:Rental ;
+    sh:property [
+        sh:path cto:forBooking ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Booking
+    ] , [
+        sh:path cto:rentedItem ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Equipment
+    ] , [
+        sh:path cto:quantity ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1
+    ] ;
+
+    # Stock: units rented by overlapping departures cannot exceed the stock
+    sh:sparql [
+        sh:message "Out of stock: {?total} units of {?item} rented on overlapping dates, stock is {?stock}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?item ?stock (SUM(?q) AS ?total) WHERE {
+                $this cto:rentedItem ?item ;
+                      cto:forBooking/cto:forDeparture ?dep .
+                ?item cto:stockQuantity ?stock .
+                ?dep  cto:startDate ?s1 ; cto:endDate ?e1 .
+                # every rental of the same item (this one included) on overlapping dates
+                ?r  cto:rentedItem ?item ; cto:quantity ?q ; cto:forBooking ?b .
+                ?b  cto:forDeparture ?d2 .
+                FILTER NOT EXISTS { ?b cto:status cto:Cancelled }
+                ?d2 cto:startDate ?s2 ; cto:endDate ?e2 .
+                FILTER (?s2 <= ?e1 && ?s1 <= ?e2)
+            }
+            GROUP BY $this ?item ?stock
+            HAVING (SUM(?q) > ?stock)
+        """
+    ] .
+
+
+###############################################################################
+#  7. REVIEWS
+###############################################################################
+
+ctosh:ReviewShape a sh:NodeShape ;
+    sh:targetClass cto:Review ;
+    sh:property [
+        sh:path cto:author ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Client
+    ] , [
+        sh:path cto:aboutGuide ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Guide
+    ] , [
+        sh:path cto:rating ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ; sh:maxInclusive 5
+    ] ;
+
+    # Only a client who actually went on a trip with this guide can review them
+    sh:sparql [
+        sh:message "{?client} never had a confirmed booking with guide {?guide}."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?client ?guide WHERE {
+                $this cto:author ?client ; cto:aboutGuide ?guide .
+                FILTER NOT EXISTS {
+                    ?b cto:bookedBy ?client ; cto:status cto:Confirmed ;
+                       cto:forDeparture/(cto:hasGuide|cto:leadGuide) ?guide .
+                }
+            }
+        """
+    ] .
