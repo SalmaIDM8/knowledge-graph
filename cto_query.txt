@@ -1,0 +1,601 @@
+###############################################################################
+#  CTO - Requêtes SPARQL
+#
+#  15 questions de compétence regroupées par besoin
+#  Chaque requête est écrite sous sa question et s'exécute seule, sur l'union
+#  de cto_schema.ttl et des fichiers cto_data_*.ttl.
+#  Les valeurs d'exemple (client, départ, période) se changent dans le VALUES
+#  de chaque requête. Date de référence du scénario : 2026-10-30.
+###############################################################################
+
+
+###############################################################################
+#  RECHERCHE DE TREKS
+###############################################################################
+
+# Q1. Quels treks de difficulté 3 ou moins durent moins de 5 jours, avec leurs
+#     types, leur massif et leur label en français (ou en anglais à défaut) ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?label ?difficulty ?days ?massif
+       (GROUP_CONCAT(DISTINCT ?typeLabel; SEPARATOR=", ") AS ?types)
+WHERE {
+    ?trek a ?type ;
+          cto:difficulty ?difficulty ;
+          cto:durationDays ?days ;
+          cto:inMountainRange ?range .
+    FILTER (?difficulty <= 3 && ?days < 5)
+
+    ?type rdfs:subClassOf* cto:Trek ;
+          rdfs:label ?typeLabel .
+    FILTER (LANG(?typeLabel) = "fr")
+
+    OPTIONAL { ?trek rdfs:label ?trekFr . FILTER (LANG(?trekFr) = "fr") }
+    OPTIONAL { ?trek rdfs:label ?trekEn . FILTER (LANG(?trekEn) = "en") }
+    BIND (COALESCE(?trekFr, ?trekEn) AS ?label)
+
+    OPTIONAL { ?range rdfs:label ?rangeFr . FILTER (LANG(?rangeFr) = "fr") }
+    OPTIONAL { ?range rdfs:label ?rangeEn . FILTER (LANG(?rangeEn) = "en") }
+    BIND (COALESCE(?rangeFr, ?rangeEn) AS ?massif)
+}
+GROUP BY ?label ?difficulty ?days ?massif
+ORDER BY ?difficulty ?days
+
+
+# Q2. Pour un mois et une année donnés (ici juillet 2027), quels départs ont
+#     encore des places libres, et combien ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?departure ?trek ?start ?capacity
+       (SUM(COALESCE(?participants, 0)) AS ?taken)
+       (?capacity - SUM(COALESCE(?participants, 0)) AS ?free)
+WHERE {
+    VALUES (?year ?month) { (2027 7) }
+
+    ?departure a cto:Departure ;
+               cto:ofTrek ?t ;
+               cto:startDate ?start ;
+               cto:capacity ?capacity .
+    FILTER (YEAR(?start) = ?year && MONTH(?start) = ?month)
+
+    ?t rdfs:label ?trek .
+    FILTER (LANG(?trek) = "fr")
+
+    OPTIONAL {
+        ?booking cto:forDeparture ?departure ;
+                 cto:numberOfParticipants ?participants .
+        FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+    }
+}
+GROUP BY ?departure ?trek ?start ?capacity
+HAVING (SUM(COALESCE(?participants, 0)) < ?capacity)
+ORDER BY ?start
+
+
+# Q3. Quels treks atteignent un point à plus de 4 000 m (sommet ou col), et
+#     quelle altitude DBpedia donne-t-elle pour ce point ?
+#     (requête fédérée : demande un accès à https://dbpedia.org/sparql)
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX dbo:  <http://dbpedia.org/ontology/>
+PREFIX dbp:  <http://dbpedia.org/property/>
+PREFIX dbr:  <http://dbpedia.org/resource/>
+
+SELECT DISTINCT ?trek ?point ?localAltitude ?dbpediaAltitude
+WHERE {
+    {
+        # les points liés à DBpedia
+        SERVICE <https://dbpedia.org/sparql> {
+            VALUES ?resource { dbr:Mont_Blanc dbr:Toubkal dbr:Kala_Patthar dbr:Thorong_La }
+            OPTIONAL { ?resource dbo:elevation ?elevation }
+            OPTIONAL { ?resource dbp:elevationM ?elevationM }
+        }
+        ?p owl:sameAs ?resource .
+    }
+    UNION
+    {
+        # les points sans page DBpedia
+        ?p cto:altitude ?a .
+        FILTER NOT EXISTS { ?p owl:sameAs ?other }
+    }
+
+    ?t cto:highestPoint|(cto:itinerary/rdf:rest*/rdf:first/cto:passesBy) ?p ;
+       rdfs:label ?trek .
+    FILTER (LANG(?trek) = "fr")
+
+    ?p cto:altitude ?localAltitude ;
+       rdfs:label ?point .
+    FILTER (LANG(?point) = "en" && ?localAltitude > 4000)
+
+    BIND (COALESCE(?elevation, ?elevationM) AS ?dbpediaAltitude)
+}
+ORDER BY DESC(?localAltitude)
+
+
+# Q4. Pour un client donné, quels treks des Alpes ou de l'Himalaya partent le
+#     plus près de chez lui ?
+#     (SPARQL n'a pas de fonctions trigonométriques : ?distance est le carré de
+#     la distance en degrés, une approximation qui suffit pour classer)
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX d:    <http://ns.cto-trekking.org/data#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX geo:  <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
+SELECT DISTINCT ?trek ?range ?startTown ?distance
+WHERE {
+    VALUES ?client { d:client16 }
+    VALUES ?mainRange { d:alps d:himalayas }
+
+    ?client cto:livesIn ?home .
+    ?home geo:lat ?homeLat ; geo:long ?homeLong .
+
+    ?t cto:inMountainRange/cto:locatedIn* ?mainRange ;
+       cto:startPoint ?start ;
+       rdfs:label ?trek .
+    FILTER (LANG(?trek) = "fr")
+
+    ?start geo:lat ?startLat ; geo:long ?startLong ;
+           rdfs:label ?startTown .
+    FILTER (LANG(?startTown) = "en")
+
+    ?mainRange rdfs:label ?range .
+    FILTER (LANG(?range) = "fr")
+
+    BIND ((?homeLat - ?startLat) * (?homeLat - ?startLat)
+          + (?homeLong - ?startLong) * (?homeLong - ?startLong) AS ?distance)
+}
+ORDER BY ASC(?distance)
+LIMIT 5
+
+
+# Q5. Quelles étapes composent un trek donné, dans l'ordre, et où le groupe
+#     dort-il chaque soir ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX d:    <http://ns.cto-trekking.org/data#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT (COUNT(DISTINCT ?cell) AS ?position) ?stage ?overnight
+       (GROUP_CONCAT(DISTINCT COALESCE(?place, ""); SEPARATOR=", ") AS ?passesBy)
+WHERE {
+    d:trekTMB cto:itinerary ?list .
+    ?list rdf:rest* ?cell .
+    ?cell rdf:rest* ?node .
+    ?node rdf:first ?stage .
+
+    OPTIONAL {
+        ?stage cto:overnightAt ?o .
+        ?o rdfs:label ?overnight .
+        FILTER (LANG(?overnight) = "en")
+    }
+    OPTIONAL {
+        ?stage cto:passesBy ?p .
+        ?p rdfs:label ?place .
+        FILTER (LANG(?place) = "en")
+    }
+}
+GROUP BY ?stage ?overnight
+ORDER BY ?position
+
+
+###############################################################################
+#  RÉSERVATIONS ET CLIENTS
+###############################################################################
+
+# Q6. Pour chaque client, y compris ceux qui n'ont jamais voyagé, combien de
+#     réservations actives a-t-il et quel montant a-t-il payé au total ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?client ?name (COUNT(?booking) AS ?bookings)
+       (SUM(COALESCE(?paid, 0)) AS ?totalPaid)
+WHERE {
+    ?client a cto:Client ;
+            foaf:givenName ?given ;
+            foaf:familyName ?family .
+    BIND (CONCAT(?given, " ", ?family) AS ?name)
+
+    OPTIONAL {
+        ?booking cto:bookedBy ?client ;
+                 cto:amountPaid ?paid .
+        FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+    }
+}
+GROUP BY ?client ?name
+ORDER BY DESC(?totalPaid) ?name
+
+
+###############################################################################
+#  GUIDES
+###############################################################################
+
+# Q7. Quels guides peuvent encadrer un départ donné : ils ont toutes les
+#     certifications exigées, connaissent la zone et ne sont ni déjà pris ni
+#     indisponibles à ces dates ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX d:    <http://ns.cto-trekking.org/data#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?guide ?family
+WHERE {
+    VALUES ?departure { d:dep2027TreCime }
+
+    ?departure cto:ofTrek ?trek .
+    ?trek cto:inMountainRange ?range .
+    ?guide a cto:Guide ;
+           foaf:familyName ?family .
+
+    # aucune certification exigée ne manque au guide
+    FILTER NOT EXISTS {
+        ?trek cto:requiresCertification ?certification .
+        FILTER NOT EXISTS { ?guide cto:hasCertification ?certification }
+    }
+
+    # il connaît le massif du trek ou un massif qui le contient
+    FILTER EXISTS {
+        ?range cto:locatedIn* ?area .
+        ?guide cto:knowsArea ?area .
+    }
+
+    # il n'est pas sur un autre départ aux mêmes dates
+    MINUS {
+        ?departure cto:startDate ?start ; cto:endDate ?end .
+        ?other cto:leadGuide|cto:hasGuide ?guide ;
+               cto:startDate ?otherStart ; cto:endDate ?otherEnd .
+        FILTER (?other != ?departure && ?otherStart <= ?end && ?start <= ?otherEnd)
+    }
+
+    # il n'est pas indisponible à ces dates
+    MINUS {
+        ?departure cto:startDate ?start ; cto:endDate ?end .
+        ?period cto:unavailableGuide ?guide ;
+                cto:fromDate ?from ; cto:toDate ?to .
+        FILTER (?from <= ?end && ?start <= ?to)
+    }
+}
+ORDER BY ?family
+
+
+# Q8. Pour chaque guide, combien de groupes a-t-il encadrés, quelle est sa note
+#     moyenne et quelles sont ses certifications ?
+#     (trois sous-requêtes, pour éviter de multiplier les lignes entre elles)
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?family ?groups ?averageRating ?certifications
+WHERE {
+    ?guide a cto:Guide ;
+           foaf:familyName ?family .
+    {
+        SELECT ?guide (COUNT(DISTINCT ?departure) AS ?groups)
+        WHERE {
+            ?guide a cto:Guide .
+            OPTIONAL {
+                ?departure cto:leadGuide|cto:hasGuide ?guide ;
+                           cto:endDate ?end .
+                FILTER (?end < "2026-10-30"^^xsd:date)
+            }
+        }
+        GROUP BY ?guide
+    }
+    OPTIONAL {
+        SELECT ?guide (ROUND(AVG(?rating) * 10) / 10 AS ?averageRating)
+        WHERE { ?review cto:aboutGuide ?guide ; cto:rating ?rating . }
+        GROUP BY ?guide
+    }
+    {
+        SELECT ?guide (GROUP_CONCAT(DISTINCT ?label; SEPARATOR=", ") AS ?certifications)
+        WHERE {
+            ?guide cto:hasCertification ?certification .
+            ?certification rdfs:label ?label .
+            FILTER (LANG(?label) = "en")
+        }
+        GROUP BY ?guide
+    }
+}
+ORDER BY DESC(?groups) DESC(?averageRating)
+
+
+# Q9. Quels participants n'ont aucune langue en commun avec leur guide ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT DISTINCT ?departure ?client ?family ?leadGuide
+WHERE {
+    ?booking cto:bookedBy ?client ;
+             cto:forDeparture ?departure .
+    FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+
+    ?client foaf:familyName ?family .
+    ?departure cto:leadGuide ?leadGuide .
+
+    # aucun guide de l'équipe ne parle une langue du client
+    FILTER NOT EXISTS {
+        ?departure cto:leadGuide|cto:hasGuide ?guide .
+        ?guide cto:speaks ?language .
+        ?client cto:speaks ?language .
+    }
+}
+ORDER BY ?departure ?family
+
+
+###############################################################################
+#  MATÉRIEL ET LOCATION
+###############################################################################
+
+# Q10. Sur une période donnée (ici août 2026), combien d'unités de chaque
+#      matériel restent disponibles, par catégorie, et lesquels sont épuisés ?
+#      (le pic de location tombe toujours sur le jour où commence un départ)
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?category ?equipment ?stock ?peak (?stock - ?peak AS ?available) ?state
+WHERE {
+    ?item a ?class ;
+          cto:stockQuantity ?stock ;
+          rdfs:label ?equipment .
+    FILTER (LANG(?equipment) = "fr")
+
+    ?class rdfs:subClassOf* cto:Equipment ;
+           rdfs:label ?category .
+    FILTER (LANG(?category) = "fr")
+
+    OPTIONAL {
+        SELECT ?item (MAX(?out) AS ?maxOut)
+        WHERE {
+            SELECT ?item ?day (SUM(?quantity) AS ?out)
+            WHERE {
+                {
+                    SELECT DISTINCT ?day
+                    WHERE {
+                        VALUES (?from ?to) { ("2026-08-01"^^xsd:date "2026-08-31"^^xsd:date) }
+                        ?d cto:startDate ?s ; cto:endDate ?e .
+                        FILTER (?s <= ?to && ?from <= ?e)
+                        BIND (IF(?s < ?from, ?from, ?s) AS ?day)
+                    }
+                }
+                ?rental cto:rentedItem ?item ;
+                        cto:quantity ?quantity ;
+                        cto:forBooking ?booking .
+                ?booking cto:forDeparture ?departure .
+                FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+                ?departure cto:startDate ?start ; cto:endDate ?end .
+                FILTER (?start <= ?day && ?day <= ?end)
+            }
+            GROUP BY ?item ?day
+        }
+        GROUP BY ?item
+    }
+    BIND (COALESCE(?maxOut, 0) AS ?peak)
+    BIND (IF(?stock - ?peak <= 0, "épuisé", "disponible") AS ?state)
+}
+ORDER BY ?category ?equipment
+
+
+# Q11. Quel matériel chaque participant d'un départ donné a-t-il loué, et pour
+#      quel coût ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX d:    <http://ns.cto-trekking.org/data#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+SELECT ?client ?family
+       (GROUP_CONCAT(COALESCE(CONCAT(STR(?quantity), " x ", ?equipment), ""); SEPARATOR=", ") AS ?rented)
+       (SUM(COALESCE(?quantity * ?dailyPrice * ?days, 0)) AS ?cost)
+WHERE {
+    VALUES ?departure { d:dep2026Annapurna }
+
+    ?departure cto:ofTrek/cto:durationDays ?days .
+    ?booking cto:forDeparture ?departure ;
+             cto:bookedBy ?client .
+    ?client foaf:familyName ?family .
+    FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+
+    OPTIONAL {
+        ?rental cto:forBooking ?booking ;
+                cto:quantity ?quantity ;
+                cto:rentedItem ?item .
+        ?item cto:dailyRentalPrice ?dailyPrice ;
+              rdfs:label ?equipment .
+        FILTER (LANG(?equipment) = "fr")
+    }
+}
+GROUP BY ?client ?family
+ORDER BY DESC(?cost)
+
+
+###############################################################################
+#  ANALYSES ET ORGANISATION
+###############################################################################
+
+# Q12. Un client donné peut-il partir sur un départ donné, sans contre-indication
+#      médicale ni autre voyage aux mêmes dates ?
+
+PREFIX cto: <http://ns.cto-trekking.org/schema#>
+PREFIX d:   <http://ns.cto-trekking.org/data#>
+
+ASK {
+    VALUES (?client ?departure) { (d:client19 d:dep2027GR20) }
+
+    ?departure cto:ofTrek ?trek ;
+               cto:startDate ?start ;
+               cto:endDate ?end .
+
+    FILTER NOT EXISTS {
+        ?client cto:hasMedicalCondition ?condition .
+        ?trek cto:notRecommendedFor ?condition .
+    }
+    FILTER NOT EXISTS {
+        ?booking cto:bookedBy ?client ;
+                 cto:forDeparture ?other .
+        FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+        ?other cto:startDate ?otherStart ;
+               cto:endDate ?otherEnd .
+        FILTER (?other != ?departure && ?otherStart <= ?end && ?start <= ?otherEnd)
+    }
+}
+
+
+# Q13. Pour chaque massif principal, quel est le chiffre d'affaires et le taux
+#      de remplissage moyen des départs ?
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?massif (COUNT(?departure) AS ?departures)
+       (SUM(?revenue) AS ?totalRevenue)
+       (ROUND(AVG(?taken / ?capacity) * 100) AS ?fillRatePercent)
+WHERE {
+    {
+        SELECT ?departure ?trek ?capacity
+               (SUM(COALESCE(?participants, 0)) AS ?taken)
+               (SUM(COALESCE(?paid, 0)) AS ?revenue)
+        WHERE {
+            ?departure cto:ofTrek ?trek ;
+                       cto:capacity ?capacity .
+            OPTIONAL {
+                ?booking cto:forDeparture ?departure ;
+                         cto:numberOfParticipants ?participants ;
+                         cto:amountPaid ?paid .
+                FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+            }
+        }
+        GROUP BY ?departure ?trek ?capacity
+    }
+
+    # massif principal : le massif sans massif parent
+    ?trek cto:inMountainRange/cto:locatedIn* ?range .
+    ?range a cto:MountainRange ;
+           rdfs:label ?massif .
+    FILTER (LANG(?massif) = "fr")
+    FILTER NOT EXISTS {
+        ?range cto:locatedIn ?parent .
+        ?parent a cto:MountainRange .
+    }
+}
+GROUP BY ?massif
+ORDER BY DESC(?totalRevenue)
+
+
+# Q14. Quel massif est le plus populaire pour chaque nationalité de client ?
+#      (en cas d'égalité, tous les massifs à égalité sont affichés)
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?nationality ?massif ?bookings
+WHERE {
+    {
+        SELECT ?country ?range (COUNT(DISTINCT ?booking) AS ?bookings)
+        WHERE {
+            ?range a cto:MountainRange .
+            FILTER NOT EXISTS {
+                ?range cto:locatedIn ?parent .
+                ?parent a cto:MountainRange .
+            }
+            ?trek cto:inMountainRange/cto:locatedIn* ?range .
+            ?booking cto:forDeparture/cto:ofTrek ?trek ;
+                     cto:bookedBy/cto:nationality ?country .
+            FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+        }
+        GROUP BY ?country ?range
+    }
+    {
+        SELECT ?country (MAX(?count) AS ?maximum)
+        WHERE {
+            {
+                SELECT ?country ?otherRange (COUNT(DISTINCT ?b) AS ?count)
+                WHERE {
+                    ?otherRange a cto:MountainRange .
+                    FILTER NOT EXISTS {
+                        ?otherRange cto:locatedIn ?p .
+                        ?p a cto:MountainRange .
+                    }
+                    ?t cto:inMountainRange/cto:locatedIn* ?otherRange .
+                    ?b cto:forDeparture/cto:ofTrek ?t ;
+                       cto:bookedBy/cto:nationality ?country .
+                    FILTER NOT EXISTS { ?b cto:status cto:Cancelled }
+                }
+                GROUP BY ?country ?otherRange
+            }
+        }
+        GROUP BY ?country
+    }
+    FILTER (?bookings = ?maximum)
+
+    ?country rdfs:label ?nationality .
+    FILTER (LANG(?nationality) = "fr")
+    ?range rdfs:label ?massif .
+    FILTER (LANG(?massif) = "fr")
+}
+ORDER BY ?nationality
+
+
+# Q15. Quelle est la fiche complète d'un départ : trek, guide, participants et
+#      matériel ? (génère un sous-graphe)
+
+PREFIX cto:  <http://ns.cto-trekking.org/schema#>
+PREFIX d:    <http://ns.cto-trekking.org/data#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+CONSTRUCT {
+    ?departure a cto:Departure ;
+               cto:ofTrek ?trek ;
+               cto:startDate ?start ;
+               cto:endDate ?end ;
+               cto:leadGuide ?lead .
+    ?trek rdfs:label ?trekLabel .
+    ?lead foaf:familyName ?leadName .
+    ?booking cto:forDeparture ?departure ;
+             cto:bookedBy ?client ;
+             cto:numberOfParticipants ?participants .
+    ?client foaf:familyName ?clientName .
+    ?rental cto:forBooking ?booking ;
+            cto:rentedItem ?item ;
+            cto:quantity ?quantity .
+    ?item rdfs:label ?itemLabel .
+}
+WHERE {
+    VALUES ?departure { d:dep2026TMBJuly }
+
+    ?departure cto:ofTrek ?trek ;
+               cto:startDate ?start ;
+               cto:endDate ?end ;
+               cto:leadGuide ?lead .
+    ?trek rdfs:label ?trekLabel .
+    ?lead foaf:familyName ?leadName .
+
+    OPTIONAL {
+        ?booking cto:forDeparture ?departure ;
+                 cto:bookedBy ?client ;
+                 cto:numberOfParticipants ?participants .
+        FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+        ?client foaf:familyName ?clientName .
+
+        OPTIONAL {
+            ?rental cto:forBooking ?booking ;
+                    cto:rentedItem ?item ;
+                    cto:quantity ?quantity .
+            ?item rdfs:label ?itemLabel .
+        }
+    }
+}
