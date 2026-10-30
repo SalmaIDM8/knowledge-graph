@@ -1,0 +1,145 @@
+###############################################################################
+#  CTO - Requêtes SPARQL
+#
+#  15 questions de compétence regroupées par besoin, puis 2 bonus
+#  (une mise à jour et un DESCRIBE).
+#  Chaque requête est écrite sous sa question.
+#
+#  Préfixes communs :
+#
+#  PREFIX cto:    <http://ns.cto-trekking.org/schema#>
+#  PREFIX d:      <http://ns.cto-trekking.org/data#>
+#  PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+#  PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+#  PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
+#  PREFIX owl:    <http://www.w3.org/2002/07/owl#>
+#  PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
+#  PREFIX geo:    <http://www.w3.org/2003/01/geo/wgs84_pos#>
+#  PREFIX schema: <http://schema.org/>
+#  PREFIX dbo:    <http://dbpedia.org/ontology/>
+#  PREFIX dbr:    <http://dbpedia.org/resource/>
+###############################################################################
+
+
+###############################################################################
+#  RECHERCHE DE TREKS
+###############################################################################
+
+# Q1. Quels treks de type ascension, de difficulté 3 ou moins et de moins de
+#     5 jours sont proposés, avec leur massif et leur label en français
+#     (ou en anglais à défaut) ?
+
+# Requête à écrire
+
+
+# Q2. Pour un mois et une année donnés (ici juillet 2027), quels départs ont
+#     encore des places libres, et combien ?
+
+# Requête à écrire
+
+
+# Q3. Quels treks atteignent un sommet de plus de 4 000 m, et quelle altitude
+#     DBpedia donne-t-elle pour ce sommet ?
+
+# Requête à écrire
+
+
+# Q4. Pour un client donné, quels treks des Alpes ou de l'Himalaya partent le
+#     plus près de chez lui ?
+
+# Requête à écrire
+
+
+# Q5. Quelles étapes composent un trek donné, dans l'ordre, et où le groupe
+#     dort-il chaque soir ?
+
+# Requête à écrire
+
+
+###############################################################################
+#  RÉSERVATIONS ET CLIENTS
+###############################################################################
+
+# Q6. Pour chaque client, y compris ceux qui n'ont jamais voyagé, combien de
+#     réservations actives a-t-il et quel montant a-t-il payé au total ?
+
+# Requête à écrire
+
+
+###############################################################################
+#  GUIDES
+###############################################################################
+
+# Q7. Quels guides peuvent encadrer un départ donné : ils ont toutes les
+#     certifications exigées, connaissent la zone et ne sont pas déjà pris à
+#     ces dates ?
+
+# Requête à écrire
+
+
+# Q8. Pour chaque guide, combien de groupes a-t-il encadrés, quelle est sa note
+#     moyenne et quelles sont ses certifications ?
+
+# Requête à écrire
+
+
+# Q9. Quels participants n'ont aucune langue en commun avec leur guide ?
+
+# Requête à écrire
+
+
+###############################################################################
+#  MATÉRIEL ET LOCATION
+###############################################################################
+
+# Q10. Quel matériel manque sur une période donnée, par catégorie ?
+
+# Requête à écrire
+
+
+# Q11. Quel matériel chaque participant d'un départ donné a-t-il loué, et pour
+#      quel coût ?
+
+# Requête à écrire
+
+
+###############################################################################
+#  ANALYSES ET ORGANISATION
+###############################################################################
+
+# Q12. Un client donné peut-il partir sur un départ donné, sans contre-indication
+#      médicale ni autre voyage aux mêmes dates ?
+
+# Requête à écrire
+
+
+# Q13. Pour chaque massif principal, quel est le chiffre d'affaires et le taux
+#      de remplissage moyen des départs ?
+
+# Requête à écrire
+
+
+# Q14. Quel massif est le plus populaire pour chaque nationalité de client ?
+
+# Requête à écrire
+
+
+# Q15. Quelle est la fiche complète d'un départ : trek, guide, participants et
+#      matériel ? (génère un sous-graphe)
+
+# Requête à écrire
+
+
+###############################################################################
+#  BONUS
+###############################################################################
+
+# B1. Réserver un départ donné pour un client donné, seulement s'il reste
+#     assez de places. (mise à jour)
+
+# Requête à écrire
+
+
+# B2. Que sait-on d'un guide donné ?
+
+# Requête à écrire
