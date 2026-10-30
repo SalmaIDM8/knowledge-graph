@@ -36,6 +36,11 @@ d:spain       a cto:Country ; rdfs:label "Spain"@en , "Espagne"@fr ;      owl:sa
 d:nepal       a cto:Country ; rdfs:label "Nepal"@en , "Népal"@fr ;        owl:sameAs dbr:Nepal .
 d:peru        a cto:Country ; rdfs:label "Peru"@en , "Pérou"@fr ;         owl:sameAs dbr:Peru .
 d:morocco     a cto:Country ; rdfs:label "Morocco"@en , "Maroc"@fr ;      owl:sameAs dbr:Morocco .
+# Countries of clients only (no trek there)
+d:unitedKingdom a cto:Country ; rdfs:label "United Kingdom"@en , "Royaume-Uni"@fr ; owl:sameAs dbr:United_Kingdom .
+d:germany     a cto:Country ; rdfs:label "Germany"@en , "Allemagne"@fr ;  owl:sameAs dbr:Germany .
+d:belgium     a cto:Country ; rdfs:label "Belgium"@en , "Belgique"@fr ;   owl:sameAs dbr:Belgium .
+d:canada      a cto:Country ; rdfs:label "Canada"@en , "Canada"@fr ;      owl:sameAs dbr:Canada .
 
 # A region (neither a country nor a range): plain cto:Place
 d:corsica a cto:Place ;
@@ -219,6 +224,30 @@ d:laFouly       a cto:Settlement ; rdfs:label "La Fouly"@en ;                cto
 d:champex       a cto:Settlement ; rdfs:label "Champex-Lac"@en ;             cto:locatedIn d:switzerland .
 d:trient        a cto:Settlement ; rdfs:label "Trient"@en ;                  cto:locatedIn d:switzerland .
 d:treLeChamp    a cto:Settlement ; rdfs:label "Tré-le-Champ"@en ;            cto:locatedIn d:france .
+
+# Home towns of clients (cto:livesIn), used to compute distances to treks.
+# Edge case: Paris has no coordinates in DBpedia.
+d:paris      a cto:Settlement ; rdfs:label "Paris"@en ;      owl:sameAs dbr:Paris ;      cto:locatedIn d:france ; cto:altitude 78.0 .
+d:lyon       a cto:Settlement ; rdfs:label "Lyon"@en ;       owl:sameAs dbr:Lyon ;       cto:locatedIn d:france ; geo:lat 45.7600 ; geo:long 4.8400 .
+d:nice       a cto:Settlement ; rdfs:label "Nice"@en ;       owl:sameAs dbr:Nice ;       cto:locatedIn d:france ; geo:lat 43.7034 ; geo:long 7.2663 .
+d:marseille  a cto:Settlement ; rdfs:label "Marseille"@en ;  owl:sameAs dbr:Marseille ;  cto:locatedIn d:france ; geo:lat 43.2964 ; geo:long 5.3700 .
+d:grenoble   a cto:Settlement ; rdfs:label "Grenoble"@en ;   owl:sameAs dbr:Grenoble ;   cto:locatedIn d:france ; geo:lat 45.1715 ; geo:long 5.7224 ; cto:altitude 398.0 .
+d:toulouse   a cto:Settlement ; rdfs:label "Toulouse"@en ;   owl:sameAs dbr:Toulouse ;   cto:locatedIn d:france ; geo:lat 43.6045 ; geo:long 1.4440 .
+d:lille      a cto:Settlement ; rdfs:label "Lille"@en ;      owl:sameAs dbr:Lille ;      cto:locatedIn d:france ; geo:lat 50.6278 ; geo:long 3.0583 .
+d:annecy     a cto:Settlement ; rdfs:label "Annecy"@en ;     owl:sameAs dbr:Annecy ;     cto:locatedIn d:france ; geo:lat 45.9160 ; geo:long 6.1330 .
+d:london     a cto:Settlement ; rdfs:label "London"@en , "Londres"@fr ; owl:sameAs dbr:London ; cto:locatedIn d:unitedKingdom ; geo:lat 51.5072 ; geo:long -0.1275 .
+d:manchester a cto:Settlement ; rdfs:label "Manchester"@en ; owl:sameAs dbr:Manchester ; cto:locatedIn d:unitedKingdom ; geo:lat 53.4790 ; geo:long -2.2452 .
+d:madrid     a cto:Settlement ; rdfs:label "Madrid"@en ;     owl:sameAs dbr:Madrid ;     cto:locatedIn d:spain ; geo:lat 40.4169 ; geo:long -3.7033 ; cto:altitude 650.0 .
+d:barcelona  a cto:Settlement ; rdfs:label "Barcelona"@en , "Barcelone"@fr ; owl:sameAs dbr:Barcelona ; cto:locatedIn d:spain ; geo:lat 41.3833 ; geo:long 2.1833 ; cto:altitude 12.0 .
+d:milan      a cto:Settlement ; rdfs:label "Milan"@en ;      owl:sameAs dbr:Milan ;      cto:locatedIn d:italy ; geo:lat 45.4669 ; geo:long 9.1900 ; cto:altitude 120.0 .
+d:turin      a cto:Settlement ; rdfs:label "Turin"@en ;      owl:sameAs dbr:Turin ;      cto:locatedIn d:italy ; geo:lat 45.0792 ; geo:long 7.6761 ; cto:altitude 239.0 .
+d:geneva     a cto:Settlement ; rdfs:label "Geneva"@en , "Genève"@fr ; owl:sameAs dbr:Geneva ; cto:locatedIn d:switzerland ; geo:lat 46.2017 ; geo:long 6.1469 .
+d:berlin     a cto:Settlement ; rdfs:label "Berlin"@en ;     owl:sameAs dbr:Berlin ;     cto:locatedIn d:germany ; geo:lat 52.5200 ; geo:long 13.4050 ; cto:altitude 34.0 .
+d:munich     a cto:Settlement ; rdfs:label "Munich"@en ;     owl:sameAs dbr:Munich ;     cto:locatedIn d:germany ; geo:lat 48.1375 ; geo:long 11.5750 .
+d:brussels   a cto:Settlement ; rdfs:label "Brussels"@en , "Bruxelles"@fr ; owl:sameAs dbr:Brussels ; cto:locatedIn d:belgium ; geo:lat 50.8467 ; geo:long 4.3525 ; cto:altitude 13.0 .
+d:montreal   a cto:Settlement ; rdfs:label "Montreal"@en , "Montréal"@fr ; owl:sameAs dbr:Montreal ; cto:locatedIn d:canada ; geo:lat 45.5089 ; geo:long -73.5542 .
+d:casablanca a cto:Settlement ; rdfs:label "Casablanca"@en ; owl:sameAs dbr:Casablanca ; cto:locatedIn d:morocco ; geo:lat 33.5333 ; geo:long -7.5833 .
+d:lima       a cto:Settlement ; rdfs:label "Lima"@en ;       owl:sameAs dbr:Lima ;       cto:locatedIn d:peru ; geo:lat -12.0600 ; geo:long -77.0375 .
 
 
 ###############################################################################

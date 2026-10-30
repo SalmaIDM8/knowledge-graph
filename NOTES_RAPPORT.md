@@ -25,7 +25,8 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **`rdf:List`** pour l'itinéraire, car l'ordre des étapes compte.
 - **Sous-propriété** : `cto:leadGuide rdfs:subPropertyOf cto:hasGuide`.
 - **Données calculées plutôt que stockées** : note d'un guide (moyenne des avis), guides éligibles pour un trek (requête) → toujours à jour.
-- 📝 Ajouts éventuels après la review de #11 (indisponibilités des guides, niveau physique du client, avis sur les départs, sous-classes de matériel).
+- **Indisponibilités des guides** (ajout #5) : classe `cto:Unavailability` (relation n-aire : guide, du, au, motif) plutôt que deux propriétés sur le guide, car un guide peut avoir plusieurs périodes. Le sujet demande de coordonner l'équipe de guides.
+- 📝 Non retenus faute de temps (→ limites) : niveau physique du client, avis sur les départs/treks, sous-classes de matériel plus fines.
 
 ## 3. Shapes SHACL (`cto_shapes.ttl`) — partie Imane ✅
 
@@ -41,10 +42,13 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **Pièges pour les données** (voir `DATA_RULES.md`) : décimaux avec un point (`990.0`), noms de personnes sans langue, labels avec `@en`/`@fr`.
 - 📝 Limite : SHACL valide mais ne corrige pas ; les règles SPARQL dépendent de l'outil (testé avec pyshacl, à vérifier avec Corese).
 
-## 4. Données (`cto_data_*.ttl`) ⏳
+## 4. Données (`cto_data_*.ttl`) ✅
 
-- 📝 Données hybrides : vrais lieux et sentiers liés à DBpedia, noyau métier écrit à la main (avec des cas limites : départ complet, matériel en rupture, client sans réservation…), volume généré par script ?
-- 📝 Nombre de triplets, résultat de la validation SHACL.
+- **Deux fichiers** : `cto_data_catalog.ttl` (ce que l'agence vend : lieux, sentiers, treks, séjours, matériel) et `cto_data_operations.ttl` (son activité : guides, clients, départs, réservations, locations, avis, indisponibilités). Les opérations **réutilisent** les IRI du catalogue (vérifié par SHACL : pas de doublon, pas de ressource inconnue).
+- **Catalogue écrit à la main**, avec de vraies données : 10 treks réels (TMB, GR20, Everest, Chemin de l'Inca…), hiérarchie de massifs, ~60 lieux liés à DBpedia par `owl:sameAs`. Chaque IRI DBpedia a été **vérifiée automatiquement** (existence, redirections suivies) ; coordonnées et altitudes copiées de DBpedia.
+- **Opérations générées par un script** (`generate_operations.py`, graine aléatoire fixe → toujours le même résultat) : le cœur métier (9 guides, 21 départs, indisponibilités) est écrit à la main dans le script ; les 30 clients, 76 réservations, 73 locations et 35 avis sont générés **en respectant les règles métier** (capacité, stock, réservation avant le départ, avis après la fin du voyage, un client pas sur deux voyages en même temps). Les durées, prix et matériel requis sont **lus dans le catalogue** → cohérence garantie.
+- **Cas limites voulus** : départ complet (12/12), départ sans réservation, clients sans réservation, guide sans départ et sans e-mail, client joignable seulement par téléphone, réservations annulées / en attente, trek d'un seul jour, lieux sans coordonnées (Paris, Cusco, Imlil), massif sans lien DBpedia, matériel en rupture de stock, avertissements SHACL (guide qui ne connaît pas la région, client asthmatique sur le trek de l'Everest).
+- **Taille** : 2 505 triplets au total ; `python validate.py` → `Conforms: True` (4 warnings attendus).
 
 ## 5. Requêtes SPARQL (`cto_query.txt`) ⏳
 

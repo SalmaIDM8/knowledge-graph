@@ -57,7 +57,16 @@ La liste complète est dans `cto_data_catalog.ttl`, rangée par sections.
 - **faute de frappe** (`d:englsh`) → erreur, car la ressource n'existe pas (pas de label, pas de type) ;
 - **doublon** (une 2ᵉ langue « French ») → erreur *« Duplicate of d:french … reuse the existing IRI »*.
 
-## 5. Vérifier avant chaque commit
+## 5. Le fichier des opérations est généré
+
+`cto_data_operations.ttl` est **produit par** `generate_operations.py` : ne pas le modifier à la main (les changements seraient perdus). Pour ajouter un guide, un départ ou une indisponibilité, modifier les listes en haut du script puis :
+
+```bash
+python generate_operations.py
+python validate.py
+```
+
+## 6. Vérifier avant chaque commit
 
 ```bash
 python validate.py
