@@ -15,7 +15,7 @@
 #  in 1..5) are checked in cto_shapes.ttl.
 #
 #  Reused vocabularies:
-#     foaf:    Person, Organization, givenName, familyName, mbox, name
+#     foaf:    Person, Organization, givenName, familyName, mbox, phone, name
 #     geo:     WGS84 lat / long
 #     schema:  birthDate
 #     owl:     sameAs (links to DBpedia only for resources that ARE identical)
@@ -263,8 +263,8 @@ cto:Guide a rdfs:Class ;
 
 # Shared by clients and guides: the domain is their common superclass
 # foaf:Person (two domains cto:Client and cto:Guide would mean "Client AND Guide").
-# Names, e-mail and birth date reuse foaf:givenName, foaf:familyName,
-# foaf:mbox and schema:birthDate (the birth date is stored, not the age).
+# Names, e-mail, phone and birth date reuse foaf:givenName, foaf:familyName,
+# foaf:mbox, foaf:phone and schema:birthDate (the birth date is stored, not the age).
 
 cto:speaks a rdf:Property ;
     rdfs:label "speaks"@en , "parle"@fr ;
@@ -440,3 +440,8 @@ cto:rating a rdf:Property ;
     rdfs:comment "Score from 1 to 5."@en ;
     rdfs:domain cto:Review ;
     rdfs:range  xsd:integer .
+
+cto:reviewDate a rdf:Property ;
+    rdfs:label "review date"@en , "date de l'avis"@fr ;
+    rdfs:domain cto:Review ;
+    rdfs:range  xsd:date .

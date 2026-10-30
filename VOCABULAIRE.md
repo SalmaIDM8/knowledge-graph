@@ -1,6 +1,6 @@
 # Vocabulaire du projet (issue #2)
 
-Le vocabulaire est défini dans [`cto_schema.ttl`](cto_schema.ttl) : 27 classes et 48 propriétés, avec des labels en anglais et en français.
+Le vocabulaire est défini dans [`cto_schema.ttl`](cto_schema.ttl) : 27 classes et 49 propriétés, avec des labels en anglais et en français.
 Ce document résume ce qui a été choisi et ce qui a changé par rapport à notre brainstorming.
 
 ## Préfixes
@@ -9,7 +9,7 @@ Ce document résume ce qui a été choisi et ce qui a changé par rapport à not
 |---|---|---|
 | `cto:` | `http://ns.cto-trekking.org/schema#` | nos classes et propriétés |
 | `d:` | `http://ns.cto-trekking.org/data#` | nos instances (fichiers de données) |
-| `foaf:` | `http://xmlns.com/foaf/0.1/` | personnes : `foaf:Person`, `givenName`, `familyName`, `mbox` |
+| `foaf:` | `http://xmlns.com/foaf/0.1/` | personnes : `foaf:Person`, `givenName`, `familyName`, `mbox`, `phone` |
 | `schema:` | `http://schema.org/` | `schema:birthDate` |
 | `geo:` | `http://www.w3.org/2003/01/geo/wgs84_pos#` | coordonnées `geo:lat` / `geo:long` |
 | `dbr:` | `http://dbpedia.org/resource/` | liens vers DBpedia avec `owl:sameAs` |
@@ -37,7 +37,7 @@ On nomme les classes en `PascalCase` et les propriétés en `camelCase`.
 | nom | `foaf:givenName`, `foaf:familyName` |
 | âge | `schema:birthDate`. On stocke la date de naissance, car l'âge change chaque année. |
 | sexe | **supprimé** : aucune question n'en a besoin, et c'est une donnée personnelle |
-| note | **pas stockée** : c'est la moyenne des `cto:Review` (`cto:rating`, `cto:aboutGuide`) |
+| note | **pas stockée** : c'est la moyenne des `cto:Review` (`cto:rating`, `cto:aboutGuide`, `cto:reviewDate`) |
 | certifications | `cto:hasCertification` → `cto:Certification` |
 | zones connues | `cto:knowsArea` → `cto:MountainRange` |
 | langues | `cto:speaks` → `cto:Language` |
@@ -45,7 +45,7 @@ On nomme les classes en `PascalCase` et les propriétés en `camelCase`.
 ### Client
 | Brainstorming | Vocabulaire |
 |---|---|
-| nom, email | `foaf:givenName`, `foaf:familyName`, `foaf:mbox` |
+| nom, email, téléphone | `foaf:givenName`, `foaf:familyName`, `foaf:mbox` ou `foaf:phone` (au moins l'un des deux, vérifié par SHACL) |
 | adresse / ville | `cto:livesIn` → `cto:Settlement`. Les coordonnées de la ville servent pour les distances. |
 | âge | `schema:birthDate` |
 | nationalité | `cto:nationality` → `cto:Country` |

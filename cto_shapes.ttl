@@ -28,7 +28,8 @@
 # Prefixes made available to the SPARQL-based constraints below
 <http://ns.cto-trekking.org/shapes>
     sh:declare [ sh:prefix "cto" ; sh:namespace "http://ns.cto-trekking.org/schema#"^^xsd:anyURI ] ,
-               [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] .
+               [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] ,
+               [ sh:prefix "rdfs" ; sh:namespace "http://www.w3.org/2000/01/rdf-schema#"^^xsd:anyURI ] .
 
 
 ###############################################################################
@@ -266,8 +267,8 @@ ctosh:DepartureShape a sh:NodeShape ;
         sh:path cto:startDate ;
         sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:date ;
-        sh:lessThan cto:endDate ;        # comparison between two properties
-        sh:message "A departure needs one start date, before its end date."@en
+        sh:lessThanOrEquals cto:endDate ;   # equal for a one-day trek
+        sh:message "A departure needs one start date, not after its end date."@en
     ] , [
         sh:path cto:endDate ;
         sh:minCount 1 ; sh:maxCount 1 ;
@@ -577,9 +578,10 @@ ctosh:RentalShape a sh:NodeShape ;
         sh:minInclusive 1
     ] ;
 
-    # Stock: units rented by overlapping departures cannot exceed the stock
+    # Stock: units out on the day a departure starts cannot exceed the stock
+    # (the number of units out only rises on a start date, so the peak is one of them)
     sh:sparql [
-        sh:message "Out of stock: {?total} units of {?item} rented on overlapping dates, stock is {?stock}."@en ;
+        sh:message "Out of stock: {?total} units of {?item} out at the same time, stock is {?stock}."@en ;
         sh:prefixes <http://ns.cto-trekking.org/shapes> ;
         sh:select """
             SELECT $this ?item ?stock (SUM(?q) AS ?total) WHERE {
@@ -587,12 +589,12 @@ ctosh:RentalShape a sh:NodeShape ;
                       cto:forBooking/cto:forDeparture ?dep .
                 ?item cto:stockQuantity ?stock .
                 ?dep  cto:startDate ?s1 ; cto:endDate ?e1 .
-                # every rental of the same item (this one included) on overlapping dates
+                # every rental of the same item (this one included) out on day ?s1
                 ?r  cto:rentedItem ?item ; cto:quantity ?q ; cto:forBooking ?b .
                 ?b  cto:forDeparture ?d2 .
                 FILTER NOT EXISTS { ?b cto:status cto:Cancelled }
                 ?d2 cto:startDate ?s2 ; cto:endDate ?e2 .
-                FILTER (?s2 <= ?e1 && ?s1 <= ?e2)
+                FILTER (?s2 <= ?s1 && ?s1 <= ?e2)
             }
             GROUP BY $this ?item ?stock
             HAVING (SUM(?q) > ?stock)
@@ -619,18 +621,25 @@ ctosh:ReviewShape a sh:NodeShape ;
         sh:minCount 1 ; sh:maxCount 1 ;
         sh:datatype xsd:integer ;
         sh:minInclusive 1 ; sh:maxInclusive 5
+    ] , [
+        sh:path cto:reviewDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date
     ] ;
 
-    # Only a client who actually went on a trip with this guide can review them
+    # Only a client who finished a trip with this guide can review them
     sh:sparql [
-        sh:message "{?client} never had a confirmed booking with guide {?guide}."@en ;
+        sh:message "On {?date}, {?client} had not finished a confirmed trip with guide {?guide}."@en ;
         sh:prefixes <http://ns.cto-trekking.org/shapes> ;
         sh:select """
-            SELECT $this ?client ?guide WHERE {
-                $this cto:author ?client ; cto:aboutGuide ?guide .
+            SELECT $this ?client ?guide ?date WHERE {
+                $this cto:author ?client ; cto:aboutGuide ?guide ; cto:reviewDate ?date .
                 FILTER NOT EXISTS {
                     ?b cto:bookedBy ?client ; cto:status cto:Confirmed ;
-                       cto:forDeparture/(cto:hasGuide|cto:leadGuide) ?guide .
+                       cto:forDeparture ?dep .
+                    ?dep cto:hasGuide|cto:leadGuide ?guide ;
+                         cto:endDate ?end .
+                    FILTER (?end <= ?date)
                 }
             }
         """
