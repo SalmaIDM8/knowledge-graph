@@ -1,6 +1,6 @@
 # Vocabulaire du projet (issue #2)
 
-Le vocabulaire est défini dans [`cto_schema.ttl`](cto_schema.ttl) : 27 classes et 49 propriétés, avec des labels en anglais et en français.
+Le vocabulaire est défini dans [`cto_schema.ttl`](cto_schema.ttl) : 28 classes et 53 propriétés, avec des labels en anglais et en français.
 Ce document résume ce qui a été choisi et ce qui a changé par rapport à notre brainstorming.
 
 ## Préfixes
@@ -23,7 +23,7 @@ On nomme les classes en `PascalCase` et les propriétés en `camelCase`.
 |---|---|
 | Lieux | `Place` → `MountainRange`, `Country`, `Settlement`, `Summit` |
 | Catalogue | `Offer` → `Trek` (→ `HutToHutTrek`, `CampingTrek`, `SummitAscent`) et `TourPackage` ; `HikingTrail`, `Stage` |
-| Planning | `Departure` |
+| Planning | `Departure`, `Unavailability` |
 | Personnes | `Client`, `Guide` (sous-classes de `foaf:Person`) ; `Language`, `Certification`, `MedicalCondition`, `Insurer` |
 | Réservations | `Booking`, `BookingStatus` (valeurs : `cto:Pending`, `cto:Confirmed`, `cto:Cancelled`) |
 | Matériel | `Equipment` → `CampingGear`, `TechnicalGear` ; `Rental` |
@@ -63,14 +63,15 @@ On nomme les classes en `PascalCase` et les propriétés en `camelCase`.
 | certifications requises | `cto:requiresCertification` → `cto:Certification` |
 | liste des guides éligibles | **pas stockée** : on la calcule par une requête (certifications du guide + zone connue). Si on la stockait, elle ne serait plus à jour dès qu'un guide change. |
 | équipements, type d'équipement | `cto:requiresEquipment` → `cto:Equipment`. Une tente, un piolet, etc. sont des **instances** ; seules deux sous-classes existent (`CampingGear`, `TechnicalGear`). |
-| (nouveau) | `cto:durationDays`, `cto:basePrice`, `cto:maxGroupSize`, `cto:highestPoint` → `cto:Summit`, `cto:inMountainRange` |
+| (nouveau) | `cto:durationDays`, `cto:basePrice`, `cto:maxGroupSize`, `cto:highestPoint` → `cto:Place` (un sommet ou un col, un sommet obligatoire pour une ascension, vérifié par SHACL), `cto:inMountainRange` |
 
 ### Ce qu'on a ajouté (et pourquoi)
-- **`cto:Departure`** : c'est le changement le plus important. Un trek (ex. le Tour du Mont-Blanc) est proposé plusieurs fois. Les **dates**, le **nombre de places** et le **guide** appartiennent à un départ, pas au trek. Les questions 2, 10, 11 et 18 en ont besoin. Propriétés : `cto:ofTrek`, `cto:startDate`, `cto:endDate`, `cto:capacity`, `cto:leadGuide`.
+- **`cto:Departure`** : c'est le changement le plus important. Un trek (ex. le Tour du Mont-Blanc) est proposé plusieurs fois. Les **dates**, le **nombre de places** et le **guide** appartiennent à un départ, pas au trek. Les questions Q2, Q7, Q10 et Q13 en ont besoin. Propriétés : `cto:ofTrek`, `cto:startDate`, `cto:endDate`, `cto:capacity`, `cto:leadGuide`.
 - **`cto:Booking`** : `cto:bookedBy`, `cto:forDeparture`, `cto:bookingDate`, `cto:numberOfParticipants`, `cto:amountPaid`, `cto:status`, `cto:withPackage`.
 - **`cto:Rental`** : `cto:forBooking`, `cto:rentedItem`, `cto:quantity`. Côté matériel : `cto:stockQuantity`, `cto:dailyRentalPrice`.
-- **`cto:Stage`** et **`cto:itinerary`** : les étapes d'un trek forment une **liste RDF ordonnée** (`rdf:List`, vue en cours), parce que l'ordre compte (question 21). Chaque étape a `cto:dayNumber`, `cto:passesBy` et `cto:overnightAt`.
+- **`cto:Stage`** et **`cto:itinerary`** : les étapes d'un trek forment une **liste RDF ordonnée** (`rdf:List`, vue en cours), parce que l'ordre compte (question Q5). Chaque étape a `cto:dayNumber`, `cto:passesBy` et `cto:overnightAt`.
 - **`cto:TourPackage`** : un trek avec des extras. Il est relié au trek par `cto:includesTrek`.
+- **`cto:Unavailability`** : une période où un guide ne peut pas partir (`cto:unavailableGuide`, `cto:fromDate`, `cto:toDate`, `cto:reason`). C'est une classe, car un guide peut avoir plusieurs périodes.
 
 ## Trois points du cours qu'on applique (à expliquer dans le rapport)
 

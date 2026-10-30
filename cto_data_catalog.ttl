@@ -512,6 +512,7 @@ d:trekAnnapurna a cto:HutToHutTrek ;
     rdfs:label "Annapurna circuit"@en , "Tour des Annapurnas"@fr ;
     cto:followsTrail d:trailAnnapurnaCircuit ;
     cto:inMountainRange d:annapurnaRange ;
+    cto:highestPoint d:thorongLa ;
     cto:startPoint d:besishahar ; cto:endPoint d:jomsom ;
     cto:durationDays 16 ; cto:difficulty 4 ; cto:maxGroupSize 12 ;
     cto:basePrice 1590.0 ;
@@ -556,7 +557,6 @@ d:toubkal2 a cto:Stage ; cto:dayNumber 2 ; cto:passesBy d:toubkal ; cto:overnigh
 d:trekTreCime a cto:Trek ;
     rdfs:label "Tre Cime di Lavaredo loop"@en , "tour des Tre Cime di Lavaredo"@fr ;
     cto:inMountainRange d:dolomites ;
-    cto:highestPoint d:treCime ;
     cto:startPoint d:cortina ; cto:endPoint d:cortina ;
     cto:durationDays 1 ; cto:difficulty 2 ; cto:maxGroupSize 15 ;
     cto:basePrice 95.0 ;

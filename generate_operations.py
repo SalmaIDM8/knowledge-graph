@@ -88,30 +88,27 @@ UNAVAILABILITIES = [
 # --------------------------------------------------------------------------
 DEPARTURES = [
     # past departures (2025 and summer 2026): reviews are possible
-    ("d:dep2025TMB",        "d:trekTMB",        "2025-07-05", 12, "d:guidePaul",   ["d:guideSophie"], 0.8),
+    ("d:dep2025TMB",        "d:trekTMB",        "2025-07-05", 12, "d:guidePaul",   ["d:guideSophie"], 0.5),
     ("d:dep2025MontBlanc",  "d:trekMontBlanc",  "2025-07-20",  2, "d:guideAnna",   [], 1.0),
-    ("d:dep2025EBC",        "d:trekEBC",        "2025-10-05", 12, "d:guidePemba",  [], 0.7),
-    ("d:dep2025Inca",       "d:trekIncaTrail",  "2025-05-10", 16, "d:guideLucia",  [], 0.6),
-    ("d:dep2025Toubkal",    "d:trekToubkal",    "2025-09-13", 12, "d:guideYoussef", [], 0.5),
-    ("d:dep2025GR20",       "d:trekGR20",       "2025-06-15", 10, "d:guideSophie", [], 0.7),
+    ("d:dep2025Inca",       "d:trekIncaTrail",  "2025-05-10", 16, "d:guideLucia",  [], 0.4),
+    ("d:dep2026Annapurna",  "d:trekAnnapurna",  "2026-04-01", 12, "d:guideDawa",   [], 0.5),
+    ("d:dep2026EBCSpring",  "d:trekEBC",        "2026-04-05", 12, "d:guidePemba",  [], 0.6),
     ("d:dep2026TMBJuly",    "d:trekTMB",        "2026-07-04", 12, "d:guidePaul",   ["d:guideMarco"], 1.0),   # fully booked
-    ("d:dep2026TMBExpress", "d:trekTMBExpress", "2026-08-22", 10, "d:guideSophie", [], 0.6),
-    ("d:dep2026MontBlanc1", "d:trekMontBlanc",  "2026-07-25",  2, "d:guideAnna",   [], 1.0),
-    ("d:dep2026MontBlanc2", "d:trekMontBlanc",  "2026-08-01",  2, "d:guideMarco",  [], 0.5),
-    ("d:dep2026TreCime",    "d:trekTreCime",    "2026-07-18", 15, "d:guideMarco",  [], 0.6),   # one-day trek
-    ("d:dep2026Annapurna",  "d:trekAnnapurna",  "2026-04-01", 12, "d:guideDawa",   [], 0.6),
-    ("d:dep2026EBCSpring",  "d:trekEBC",        "2026-04-05", 12, "d:guidePemba",  [], 0.8),
+    ("d:dep2026TreCime",    "d:trekTreCime",    "2026-07-18", 15, "d:guideMarco",  [], 0.4),   # one-day trek
     # Anna does not know the Pyrenees (Paul does but is on holidays) -> SHACL warning
     ("d:dep2026Vignemale",  "d:trekVignemale",  "2026-08-10",  6, "d:guideAnna",   [], 0.7),
-    ("d:dep2026TMBSept",    "d:trekTMB",        "2026-09-05", 12, "d:guidePaul",   [], 0.5),
+    ("d:dep2026MontBlanc",  "d:trekMontBlanc",  "2026-08-11",  2, "d:guideMarco",  [], 1.0),
+    ("d:dep2026TMBExpress", "d:trekTMBExpress", "2026-08-22", 10, "d:guideSophie", [], 0.6),
     # future departures: pending bookings, no review yet
-    ("d:dep2026EBCAutumn",  "d:trekEBC",        "2026-11-01", 12, "d:guideDawa",   [], 0.5),
-    ("d:dep2026Inca",       "d:trekIncaTrail",  "2026-11-14", 16, "d:guideLucia",  [], 0.4),
     ("d:dep2026Toubkal",    "d:trekToubkal",    "2026-12-05",  8, "d:guideYoussef", [], 0.3),
-    ("d:dep2027Annapurna",  "d:trekAnnapurna",  "2027-03-20", 12, "d:guidePemba",  [], 0.2),
-    ("d:dep2027TMB",        "d:trekTMB",        "2027-07-03", 12, "d:guidePaul",   ["d:guideSophie"], 0.3),
     ("d:dep2027GR20",       "d:trekGR20",       "2027-06-14", 10, "d:guideSophie", [], 0.0),   # no booking yet
+    ("d:dep2027TMB",        "d:trekTMB",        "2027-07-03", 12, "d:guidePaul",   ["d:guideSophie"], 0.3),
+    ("d:dep2027TreCime",    "d:trekTreCime",    "2027-07-10", 15, "d:guideMarco",  [], 0.4),
+    ("d:dep2027TMBFull",    "d:trekTMB",        "2027-07-17", 12, "d:guideMarco",  [], 1.0),   # fully booked
 ]
+
+# Hand-written scenario: these two groups rent all 6 harnesses at the same time
+ALL_HARNESSES = {"d:dep2026Vignemale": ("d:client03", 4), "d:dep2026MontBlanc": ("d:client04", 2)}
 
 # --------------------------------------------------------------------------
 # 4. Clients (generated)
@@ -127,11 +124,9 @@ TOWNS = {  # town -> (country, main language)
     "d:montreal": ("d:canada", "d:french"), "d:casablanca": ("d:morocco", "d:arabic"), "d:lima": ("d:peru", "d:spanish"),
 }
 GIVEN = ["Marie", "Lucas", "Emma", "Hugo", "Chloé", "Louis", "Léa", "Nathan", "Camille", "Jules", "Sarah", "Adam",
-         "Olivia", "James", "Sofia", "Mateo", "Giulia", "Lukas", "Mia", "Omar", "Inès", "Noah", "Clara", "Leo",
-         "Alice", "Ethan", "Laura", "Samuel", "Nora", "Elias"]
+         "Olivia", "James", "Sofia", "Mateo", "Giulia", "Lukas", "Mia", "Omar"]
 FAMILY = ["Dupont", "Moreau", "Laurent", "Garcia", "Smith", "Müller", "Bianchi", "Fernández", "Lefebvre", "Dubois",
-          "Brown", "Schmidt", "Romano", "López", "Benali", "Girard", "Wilson", "Fischer", "Ricci", "Martín",
-          "Roux", "Fontaine", "Taylor", "Weber", "Conti", "Ruiz", "Mercier", "Haddad", "Clark", "Vidal"]
+          "Brown", "Schmidt", "Romano", "López", "Benali", "Girard", "Wilson", "Fischer", "Ricci", "Martín"]
 INSURERS = ["d:insurerAlpineAssist", "d:insurerTrekSafe", "d:insurerWorldCover"]
 CONDITIONS = ["d:asthma", "d:kneeProblems", "d:heartCondition", "d:vertigo", "d:altitudeSickness"]
 
@@ -151,7 +146,7 @@ for i, (given, family) in enumerate(zip(GIVEN, FAMILY), start=1):
 # Edge cases
 clients["d:client05"].update(mail=None, phone="+33612345678")    # phone only
 clients["d:client12"].update(conditions=["d:asthma"])            # will book the Everest trek -> warning
-NO_BOOKING = {"d:client29", "d:client30"}                         # clients who never booked
+NO_BOOKING = {"d:client19", "d:client20"}                         # clients who never booked
 LOYAL = "d:client01"                                              # client with many trips
 
 # --------------------------------------------------------------------------
@@ -179,7 +174,7 @@ def stock_ok(item, period, q):
             return False
     return True
 
-def add_booking(dep, client, n, status, n_book):
+def add_booking(dep, client, n, status, n_book, rent_for_all=None):
     info, trek = dep_info[dep], treks[dep_info[dep]["trek"]]
     latest = min(info["start"] - timedelta(days=7), TODAY)
     bdate = latest - timedelta(days=random.randint(0, 150))
@@ -197,15 +192,17 @@ def add_booking(dep, client, n, status, n_book):
     client_trips[client].append((info["start"], info["end"]))
     # rentals: required equipment for some clients, plus optional poles / jacket
     period = (info["start"], info["end"])
-    wanted = [e for e in trek["equipment"] if random.random() < 0.5]
-    wanted += [e for e in ("d:trekkingPoles", "d:downJacket") if e not in wanted and random.random() < 0.15]
+    wanted = [e for e in trek["equipment"] if random.random() < 0.3]
+    wanted += [e for e in ("d:trekkingPoles", "d:downJacket") if e not in wanted and random.random() < 0.1]
+    if rent_for_all:
+        wanted = [rent_for_all]
     for item in wanted:
-        q = random.randint(1, n)
+        q = n if rent_for_all else random.randint(1, n)
         if stock_ok(item, period, q):
             rentals_out.append((info["start"], info["end"], item, q))
             rentals.append(dict(id=f"d:rental{len(rentals) + 1:03d}", booking=bid, item=item, q=q))
     # reviews: only after the end of a confirmed trip, before TODAY
-    if status == "d:Confirmed" and info["end"] < TODAY and random.random() < 0.6:
+    if status == "d:Confirmed" and info["end"] < TODAY and random.random() < 0.4:
         rdate = min(info["end"] + timedelta(days=random.randint(1, 20)), TODAY)
         for g in info["guides"][: 1 + (random.random() < 0.3)]:
             reviews.append(dict(id=f"d:review{len(reviews) + 1:03d}", client=client, guide=g, date=rdate,
@@ -222,6 +219,9 @@ for dep, info in sorted(dep_info.items(), key=lambda kv: kv[1]["start"]):
         n_book += 1; add_booking(dep, LOYAL, 1, "d:Confirmed", n_book); seats += 1
     if dep == "d:dep2026EBCSpring" and free("d:client12"):
         n_book += 1; add_booking(dep, "d:client12", 1, "d:Confirmed", n_book); seats += 1
+    if dep in ALL_HARNESSES:
+        client, n = ALL_HARNESSES[dep]
+        n_book += 1; add_booking(dep, client, n, "d:Confirmed", n_book, rent_for_all="d:harness"); seats += n
     tries = 0
     while seats < target and tries < 200:
         tries += 1

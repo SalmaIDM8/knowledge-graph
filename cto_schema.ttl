@@ -145,8 +145,9 @@ cto:endPoint a rdf:Property ;
 
 cto:highestPoint a rdf:Property ;
     rdfs:label "highest point"@en , "point culminant"@fr ;
+    rdfs:comment "Highest place actually reached by the trek: a summit, but also a pass such as Thorong La."@en ;
     rdfs:domain cto:Trek ;
-    rdfs:range  cto:Summit .
+    rdfs:range  cto:Place .
 
 cto:durationDays a rdf:Property ;
     rdfs:label "duration (days)"@en , "durée (jours)"@fr ;

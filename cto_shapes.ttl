@@ -159,7 +159,7 @@ ctosh:TrekShape a sh:NodeShape ;
     ] , [
         sh:path cto:highestPoint ;
         sh:maxCount 1 ;
-        sh:class cto:Summit
+        sh:class cto:Place
     ] , [
         sh:path cto:requiresCertification ;
         sh:class cto:Certification
@@ -186,7 +186,8 @@ ctosh:SummitAscentShape a sh:NodeShape ;
     sh:property [
         sh:path cto:highestPoint ;
         sh:minCount 1 ;
-        sh:message "A summit ascent must have a cto:highestPoint."@en
+        sh:class cto:Summit ;
+        sh:message "A summit ascent must have a cto:highestPoint that is a summit."@en
     ] .
 
 # The itinerary has one stage per day, numbered 1, 2, 3... in list order
