@@ -159,7 +159,7 @@ ctosh:TrekShape a sh:NodeShape ;
     ] , [
         sh:path cto:highestPoint ;
         sh:maxCount 1 ;
-        sh:class cto:Summit
+        sh:class cto:Place
     ] , [
         sh:path cto:requiresCertification ;
         sh:class cto:Certification
@@ -186,7 +186,8 @@ ctosh:SummitAscentShape a sh:NodeShape ;
     sh:property [
         sh:path cto:highestPoint ;
         sh:minCount 1 ;
-        sh:message "A summit ascent must have a cto:highestPoint."@en
+        sh:class cto:Summit ;
+        sh:message "A summit ascent must have a cto:highestPoint that is a summit."@en
     ] .
 
 # The itinerary has one stage per day, numbered 1, 2, 3... in list order
@@ -380,6 +381,11 @@ ctosh:PersonShape a sh:NodeShape ;
         sh:pattern "^mailto:[^@]+@[^@]+\\.[a-z]+$" ;
         sh:message "foaf:mbox must be a mailto: IRI, e.g. <mailto:marie@example.org>."@en
     ] , [
+        sh:path foaf:phone ;
+        sh:nodeKind sh:IRI ;
+        sh:pattern "^tel:\\+[0-9]+$" ;
+        sh:message "foaf:phone must be a tel: IRI in international format, e.g. <tel:+33612345678>."@en
+    ] , [
         sh:path schema:birthDate ;
         sh:maxCount 1 ;
         sh:datatype xsd:date
@@ -427,6 +433,41 @@ ctosh:GuideShape a sh:NodeShape ;
         sh:path cto:knowsArea ;
         sh:minCount 1 ;
         sh:class cto:MountainRange
+    ] .
+
+ctosh:UnavailabilityShape a sh:NodeShape ;
+    sh:targetClass cto:Unavailability ;
+    sh:property [
+        sh:path cto:unavailableGuide ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:class cto:Guide
+    ] , [
+        sh:path cto:fromDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date ;
+        sh:lessThanOrEquals cto:toDate
+    ] , [
+        sh:path cto:toDate ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+        sh:datatype xsd:date
+    ] , [
+        sh:path cto:reason ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string
+    ] ;
+
+    # The guide must not be assigned to a departure during the period
+    sh:sparql [
+        sh:message "Guide {?g} is unavailable but assigned to departure {?dep} on overlapping dates."@en ;
+        sh:prefixes <http://ns.cto-trekking.org/shapes> ;
+        sh:select """
+            SELECT $this ?g ?dep WHERE {
+                $this cto:unavailableGuide ?g ; cto:fromDate ?from ; cto:toDate ?to .
+                ?dep cto:hasGuide|cto:leadGuide ?g ;
+                     cto:startDate ?s ; cto:endDate ?e .
+                FILTER (?s <= ?to && ?from <= ?e)
+            }
+        """
     ] .
 
 # Reference classes: just a label in at least one language

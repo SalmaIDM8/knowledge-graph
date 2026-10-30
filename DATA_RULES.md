@@ -30,7 +30,7 @@ Ces pièges font échouer la validation :
 
 | Propriété | ✅ Correct |
 |---|---|
-| `cto:startDate`, `cto:endDate`, `cto:bookingDate`, `cto:reviewDate`, `schema:birthDate` | `"2026-07-05"^^xsd:date` |
+| `cto:startDate`, `cto:endDate`, `cto:fromDate`, `cto:toDate`, `cto:bookingDate`, `cto:reviewDate`, `schema:birthDate` | `"2026-07-05"^^xsd:date` |
 | `foaf:mbox` | `<mailto:marie@example.org>` (un lien, pas un texte) |
 | `foaf:phone` | `<tel:+33612345678>` (un lien, pas un texte) |
 | `owl:sameAs` | `dbr:Tour_du_Mont_Blanc` (uniquement DBpedia) |
@@ -57,7 +57,16 @@ La liste complète est dans `cto_data_catalog.ttl`, rangée par sections.
 - **faute de frappe** (`d:englsh`) → erreur, car la ressource n'existe pas (pas de label, pas de type) ;
 - **doublon** (une 2ᵉ langue « French ») → erreur *« Duplicate of d:french … reuse the existing IRI »*.
 
-## 5. Vérifier avant chaque commit
+## 5. Le fichier des opérations est généré
+
+`cto_data_operations.ttl` est **produit par** `generate_operations.py` : ne pas le modifier à la main (les changements seraient perdus). Pour ajouter un guide, un départ ou une indisponibilité, modifier les listes en haut du script puis :
+
+```bash
+python generate_operations.py
+python validate.py
+```
+
+## 6. Vérifier avant chaque commit
 
 ```bash
 python validate.py
