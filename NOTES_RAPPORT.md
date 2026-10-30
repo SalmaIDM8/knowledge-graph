@@ -2,17 +2,15 @@
 
 Brouillon à compléter au fur et à mesure (issues #9 et #10). On note ici les **choix** et leur **pourquoi** pendant qu'on s'en souvient. Le rapport final fait 5 pages maximum.
 
-Légende : ✅ fait · 📝 à compléter · ⏳ pas encore commencé
-
 ---
 
-## 1. Sujet et périmètre ✅
+## 1. Sujet et périmètre 
 
 - L'énoncé mélange *trekking company* (titre) et *cycling tour operator* (le préfixe `cto_` des fichiers). On a choisi le **trekking** et gardé les noms de fichiers `cto_*` demandés.
 - Entités couvertes : lieux, sentiers, treks (types de treks), étapes, séjours (*tour packages*), départs, clients, guides, réservations, matériel, locations, avis.
 - 📝 Qui a fait quoi dans le binôme.
 
-## 2. Vocabulaire RDFS (`cto_schema.ttl`) — partie Salma ✅
+## 2. Vocabulaire RDFS (`cto_schema.ttl`)
 
 Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 
@@ -28,7 +26,7 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **Indisponibilités des guides** (ajout #5) : classe `cto:Unavailability` (relation n-aire : guide, du, au, motif) plutôt que deux propriétés sur le guide, car un guide peut avoir plusieurs périodes. Le sujet demande de coordonner l'équipe de guides.
 - 📝 Non retenus faute de temps (→ limites) : niveau physique du client, avis sur les départs/treks, sous-classes de matériel plus fines.
 
-## 3. Shapes SHACL (`cto_shapes.ttl`) — partie Imane ✅
+## 3. Shapes SHACL (`cto_shapes.ttl`)
 
 - **RDFS décrit, SHACL contraint** : `rdfs:range xsd:integer` n'empêche pas une difficulté de 12 ; `sh:minInclusive 1 ; sh:maxInclusive 5` l'empêche.
 - **Trois niveaux de règles :**
@@ -43,7 +41,7 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **Pièges pour les données** (voir `DATA_RULES.md`) : décimaux avec un point (`990.0`), noms de personnes sans langue, labels avec `@en`/`@fr`.
 - 📝 Limite : SHACL valide mais ne corrige pas ; les règles SPARQL dépendent de l'outil (testé avec pyshacl, à vérifier avec Corese).
 
-## 4. Données (`cto_data_*.ttl`) ✅
+## 4. Données (`cto_data_*.ttl`)
 
 - **Deux fichiers** : `cto_data_catalog.ttl` (ce que l'agence vend : lieux, sentiers, treks, séjours, matériel) et `cto_data_operations.ttl` (son activité : guides, clients, départs, réservations, locations, avis, indisponibilités). Les opérations **réutilisent** les IRI du catalogue (vérifié par SHACL : pas de doublon, pas de ressource inconnue).
 - **Catalogue écrit à la main**, avec de vraies données : 10 treks réels (TMB, GR20, Everest, Chemin de l'Inca…), hiérarchie de massifs, ~60 lieux liés à DBpedia par `owl:sameAs`. Chaque IRI DBpedia a été **vérifiée automatiquement** (existence, redirections suivies) ; coordonnées et altitudes copiées de DBpedia.
@@ -52,7 +50,7 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **Taille** : 1 931 triplets au total ; `python validate.py` → `Conforms: True` (2 warnings attendus).
 - **Limite du script** : le moindre changement dans ses listes modifie toutes les données aléatoires. Les données sont donc figées avant d'écrire les résultats dans le rapport.
 
-## 5. Requêtes SPARQL (`cto_query.txt`) ✅
+## 5. Requêtes SPARQL (`cto_query.txt`)
 
 15 questions de compétence regroupées par besoin (recherche de treks, clients, guides, matériel, analyses), plus 2 bonus.
 
@@ -81,25 +79,11 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - 📝 Limite : Q4 utilise une distance approximative (carré de la distance en degrés), car SPARQL n'a pas de fonctions trigonométriques.
 - 📝 À vérifier avec Corese.
 
-## 6. Recul : limites et améliorations ⏳
+## 6. Recul : limites et améliorations 
 
 - 📝 Simplifications assumées : le matériel est géré par modèle (stock), pas par objet individuel ; une location n'a pas de dates propres (elle prend celles du départ).
 - 📝 Ce qu'on ferait avec OWL (transitivité, propriétés inverses, cardinalités inférées).
 
-## 7. Utilisation de l'IA (section obligatoire) 📝
+## 7. Utilisation de l'IA (section obligatoire)
 
 Chaque membre complète sa partie honnêtement : **quel outil**, **pour quoi**, **ce qu'on a vérifié ou modifié soi-même**.
-
-**Imane** — assistant IA utilisé pour :
-- analyser l'énoncé et l'état du dépôt ;
-- expliquer le vocabulaire et les notions (SHACL, RDF lists) avec des exemples ;
-- proposer et écrire une première version de `cto_shapes.ttl` et de `DATA_RULES.md`, et les tester avec pyshacl.
-- Ce que j'ai fait moi-même : 📝 (choix, relecture, compréhension de chaque règle, modifications…)
-- 📝 Nommer l'outil précisément dans le rapport final.
-
-**Salma** — assistant IA (Claude Code) utilisé pour :
-- proposer une première version de `cto_schema.ttl` à partir de notre brainstorming, puis la réduire ;
-- vérifier les IRI et les altitudes sur DBpedia ;
-- relire les shapes et les données, tester les règles avec pyshacl et corriger les problèmes trouvés ;
-- proposer et sélectionner les 15 questions de compétence.
-- Ce que j'ai fait moi-même : 📝 (choix, relecture, compréhension de chaque élément, modifications…)
