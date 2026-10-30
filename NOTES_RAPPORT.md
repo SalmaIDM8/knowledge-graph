@@ -17,7 +17,7 @@ Légende : ✅ fait · 📝 à compléter · ⏳ pas encore commencé
 Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 
 - **Deux namespaces** : `cto:` pour le vocabulaire, `d:` pour les instances.
-- **Réutilisation + vocabulaire propre** : `foaf:Person`, `foaf:givenName`, `schema:birthDate`, `geo:lat/long`, et 27 classes / 48 propriétés `cto:` à nous.
+- **Réutilisation + vocabulaire propre** : `foaf:Person`, `foaf:givenName`, `schema:birthDate`, `geo:lat/long`, et 27 classes / 49 propriétés `cto:` à nous.
 - **Trek ≠ Departure** : un trek est un produit du catalogue, un départ est une session datée (dates, places, guide). Les réservations portent sur un départ.
 - **`owl:sameAs` vers DBpedia** seulement entre choses identiques : sentiers (`dbr:Tour_du_Mont_Blanc`) et lieux. Pas sur un trek, qui est notre produit commercial.
 - **Un seul `rdfs:domain`** : plusieurs domaines = intersection, pas union → domaine `foaf:Person` pour `cto:speaks`, super-classe `cto:Offer` pour `cto:basePrice`.
@@ -31,9 +31,9 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 
 - **RDFS décrit, SHACL contraint** : `rdfs:range xsd:integer` n'empêche pas une difficulté de 12 ; `sh:minInclusive 1 ; sh:maxInclusive 5` l'empêche.
 - **Trois niveaux de règles :**
-  1. *simples* : `sh:minCount`/`sh:maxCount`, `sh:datatype`, `sh:class`, `sh:pattern` (mailto, IRI DBpedia), `sh:uniqueLang`, `sh:in` (statut d'une réservation), `sh:lessThan` (date de début < date de fin) ;
+  1. *simples* : `sh:minCount`/`sh:maxCount`, `sh:datatype`, `sh:class`, `sh:pattern` (mailto, IRI DBpedia), `sh:uniqueLang`, `sh:in` (statut d'une réservation), `sh:lessThanOrEquals` (date de début ≤ date de fin, égales pour un trek d'un jour) ;
   2. *logiques* : `sh:or` (un client a un e-mail **ou** un téléphone), `sh:not` (un guide n'est pas un client) ;
-  3. *métier en SPARQL* (`sh:sparql`) : surréservation, guide sur deux départs qui se chevauchent, certifications exigées par le trek, stock de matériel sur des dates qui se chevauchent, réservation avant le départ, avis seulement après un voyage avec le guide, pas de cycle dans `cto:locatedIn`, une étape par jour.
+  3. *métier en SPARQL* (`sh:sparql`) : surréservation, guide sur deux départs qui se chevauchent, certifications exigées par le trek, stock de matériel le jour de chaque départ (le pic de location tombe toujours sur une date de début), réservation avant le départ, avis seulement après la fin d'un voyage avec le guide (`cto:reviewDate`), pas de cycle dans `cto:locatedIn`, une étape par jour.
 - **Chemins de propriétés** sur la liste RDF : `cto:itinerary/rdf:rest*/rdf:first` → chaque élément est une `cto:Stage`.
 - **Violation vs Warning** : certaines règles bloquent (`sh:Violation`), d'autres préviennent seulement (`sh:Warning`) : guide qui ne connaît pas la région, client avec une condition médicale déconseillée.
 - **Difficulté rencontrée** : pyshacl refuse les sous-requêtes (`SELECT` imbriqué) qui utilisent `$this` → réécrites avec `GROUP BY … HAVING`.

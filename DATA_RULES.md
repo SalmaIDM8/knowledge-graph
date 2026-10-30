@@ -30,8 +30,9 @@ Ces pièges font échouer la validation :
 
 | Propriété | ✅ Correct |
 |---|---|
-| `cto:startDate`, `cto:endDate`, `cto:bookingDate`, `schema:birthDate` | `"2026-07-05"^^xsd:date` |
+| `cto:startDate`, `cto:endDate`, `cto:bookingDate`, `cto:reviewDate`, `schema:birthDate` | `"2026-07-05"^^xsd:date` |
 | `foaf:mbox` | `<mailto:marie@example.org>` (un lien, pas un texte) |
+| `foaf:phone` | `<tel:+33612345678>` (un lien, pas un texte) |
 | `owl:sameAs` | `dbr:Tour_du_Mont_Blanc` (uniquement DBpedia) |
 | `cto:status` | `cto:Pending`, `cto:Confirmed` ou `cto:Cancelled` |
 
