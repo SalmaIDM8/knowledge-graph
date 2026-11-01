@@ -8,7 +8,7 @@ Brouillon à compléter au fur et à mesure (issues #9 et #10). On note ici les 
 
 - L'énoncé mélange *trekking company* (titre) et *cycling tour operator* (le préfixe `cto_` des fichiers). On a choisi le **trekking** et gardé les noms de fichiers `cto_*` demandés.
 - Entités couvertes : lieux, sentiers, treks (types de treks), étapes, séjours (*tour packages*), départs, clients, guides, réservations, matériel, locations, avis.
-- 📝 Qui a fait quoi dans le binôme.
+- Qui a fait quoi dans le binôme.
 
 ## 2. Vocabulaire RDFS (`cto_schema.ttl`)
 
@@ -24,7 +24,7 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **Sous-propriété** : `cto:leadGuide rdfs:subPropertyOf cto:hasGuide`.
 - **Données calculées plutôt que stockées** : note d'un guide (moyenne des avis), guides éligibles pour un trek (requête) → toujours à jour.
 - **Indisponibilités des guides** (ajout #5) : classe `cto:Unavailability` (relation n-aire : guide, du, au, motif) plutôt que deux propriétés sur le guide, car un guide peut avoir plusieurs périodes. Le sujet demande de coordonner l'équipe de guides.
-- 📝 Non retenus faute de temps (→ limites) : niveau physique du client, avis sur les départs/treks, sous-classes de matériel plus fines.
+- Non retenus faute de temps (→ limites) : niveau physique du client, avis sur les départs/treks, sous-classes de matériel plus fines.
 
 ## 3. Shapes SHACL (`cto_shapes.ttl`)
 
@@ -39,7 +39,7 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 - **Difficulté rencontrée** : pyshacl refuse les sous-requêtes (`SELECT` imbriqué) qui utilisent `$this` → réécrites avec `GROUP BY … HAVING`.
 - **Méthode de test** : un petit jeu de données correct → `Conforms: True` ; puis 13 erreurs ajoutées volontairement → les 13 sont détectées (+ 1 warning).
 - **Pièges pour les données** (voir `DATA_RULES.md`) : décimaux avec un point (`990.0`), noms de personnes sans langue, labels avec `@en`/`@fr`.
-- 📝 Limite : SHACL valide mais ne corrige pas ; les règles SPARQL dépendent de l'outil (testé avec pyshacl, à vérifier avec Corese).
+- Limite : SHACL valide mais ne corrige pas ; les règles SPARQL dépendent de l'outil : Corese 4.5 n'évalue pas les contraintes `sh:sparql`, elles ne sont vérifiées que par pyshacl.
 
 ## 4. Données (`cto_data_*.ttl`)
 
@@ -76,13 +76,13 @@ Détails dans `VOCABULAIRE.md`. Points à mettre en avant :
 
 - **Tests** : toutes les requêtes sont exécutées avec rdflib ; Q6, Q8 et Q13 sont recoupées par un calcul en Python ; Q12 et B1 sont aussi testées sur leurs cas négatifs (contre-indication, conflit de dates, départ complet), et les données restent conformes à SHACL après B1.
 - **Difficultés avec rdflib** : `SERVICE SILENT` n'est pas exécuté et les valeurs locales ne sont pas transmises au `SERVICE` → liste des ressources dans un `VALUES` ; les variables d'une sous-requête ne sont pas isolées → variables renommées dans Q14.
-- 📝 Limite : Q4 utilise une distance approximative (carré de la distance en degrés), car SPARQL n'a pas de fonctions trigonométriques.
-- 📝 À vérifier avec Corese.
+- Limite : Q4 utilise une distance approximative (carré de la distance en degrés), car SPARQL n'a pas de fonctions trigonométriques.
+- Testées aussi dans Corese 4.5 (voir le brouillon du rapport, §6).
 
 ## 6. Recul : limites et améliorations 
 
-- 📝 Simplifications assumées : le matériel est géré par modèle (stock), pas par objet individuel ; une location n'a pas de dates propres (elle prend celles du départ).
-- 📝 Ce qu'on ferait avec OWL (transitivité, propriétés inverses, cardinalités inférées).
+- Simplifications assumées : le matériel est géré par modèle (stock), pas par objet individuel ; une location n'a pas de dates propres (elle prend celles du départ).
+- Ce qu'on ferait avec OWL (transitivité, propriétés inverses, cardinalités inférées).
 
 ## 7. Utilisation de l'IA (section obligatoire)
 
