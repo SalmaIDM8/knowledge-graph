@@ -136,16 +136,7 @@ Il faut cependant garder en tête que OWL **déduit** de nouveaux faits, alors q
 
 Chacune décrit honnêtement l'outil utilisé, pour quoi, et ce qu'elle a vérifié ou décidé elle-même.
 
-**Imane : outil Claude Code (Anthropic), un assistant en ligne de commande.**
-- *Utilisé pour :*
-  - analyser l'énoncé et l'état du dépôt ;
-  - m'expliquer les notions (SHACL, listes RDF, inférence) avec des exemples ;
-  - proposer une première version des shapes, du catalogue et du générateur, puis les tester (pyshacl, rdflib, Corese) ;
-  - vérifier les IRI DBpedia par script.
-- *Ce que j'ai décidé ou vérifié moi-même :* [À COMPLÉTER avec tes mots : par exemple le choix du trekking, l'organisation par issues et par PR, la règle « les données suivent les questions », la relecture de chaque règle, les tests que tu as relancés…]
-- *Ce qui n'allait pas dans les propositions :*
-  - une première version de la règle de stock donnait de fausses alertes, et Salma l'a corrigée ;
-  - `sh:lessThan` bloquait les treks d'un jour ;
+**Imane : outil Claude Code (Anthropic)
   - [À COMPLÉTER]
 
 **Salma : outil [À COMPLÉTER].** [À COMPLÉTER]
