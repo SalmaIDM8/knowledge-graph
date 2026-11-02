@@ -145,8 +145,9 @@ cto:endPoint a rdf:Property ;
 
 cto:highestPoint a rdf:Property ;
     rdfs:label "highest point"@en , "point culminant"@fr ;
+    rdfs:comment "Highest place actually reached by the trek: a summit, but also a pass such as Thorong La."@en ;
     rdfs:domain cto:Trek ;
-    rdfs:range  cto:Summit .
+    rdfs:range  cto:Place .
 
 cto:durationDays a rdf:Property ;
     rdfs:label "duration (days)"@en , "durée (jours)"@fr ;
@@ -315,6 +316,33 @@ cto:MedicalCondition a rdfs:Class ;
 cto:Insurer a rdfs:Class ;
     rdfs:subClassOf foaf:Organization ;
     rdfs:label "insurer"@en , "assureur"@fr .
+
+# Guide team coordination: periods when a guide cannot lead a departure.
+# A class (not two properties on cto:Guide) because a guide can have several
+# periods, each with its own dates and reason (n-ary relation).
+cto:Unavailability a rdfs:Class ;
+    rdfs:label "unavailability"@en , "indisponibilité"@fr ;
+    rdfs:comment "A period (holidays, training, injury...) when a guide cannot be assigned to a departure."@en .
+
+cto:unavailableGuide a rdf:Property ;
+    rdfs:label "unavailable guide"@en , "guide indisponible"@fr ;
+    rdfs:domain cto:Unavailability ;
+    rdfs:range  cto:Guide .
+
+cto:fromDate a rdf:Property ;
+    rdfs:label "from date"@en , "du"@fr ;
+    rdfs:domain cto:Unavailability ;
+    rdfs:range  xsd:date .
+
+cto:toDate a rdf:Property ;
+    rdfs:label "to date"@en , "au"@fr ;
+    rdfs:domain cto:Unavailability ;
+    rdfs:range  xsd:date .
+
+cto:reason a rdf:Property ;
+    rdfs:label "reason"@en , "motif"@fr ;
+    rdfs:domain cto:Unavailability ;
+    rdfs:range  xsd:string .
 
 
 ###############################################################################
