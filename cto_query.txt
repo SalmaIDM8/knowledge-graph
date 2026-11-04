@@ -50,29 +50,34 @@ ORDER BY ?difficulty ?days
 PREFIX cto:  <http://ns.cto-trekking.org/schema#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?departure ?trek ?start ?capacity
-       (SUM(COALESCE(?participants, 0)) AS ?taken)
-       (?capacity - SUM(COALESCE(?participants, 0)) AS ?free)
+SELECT ?departure ?trek ?start ?capacity ?taken ?free
 WHERE {
-    VALUES (?year ?month) { (2027 7) }
+    {
+        SELECT ?departure ?trek ?start ?capacity
+               (SUM(COALESCE(?participants, 0)) AS ?taken)
+               (?capacity - SUM(COALESCE(?participants, 0)) AS ?free)
+        WHERE {
+            VALUES (?year ?month) { (2027 7) }
 
-    ?departure a cto:Departure ;
-               cto:ofTrek ?t ;
-               cto:startDate ?start ;
-               cto:capacity ?capacity .
-    FILTER (YEAR(?start) = ?year && MONTH(?start) = ?month)
+            ?departure a cto:Departure ;
+                       cto:ofTrek ?t ;
+                       cto:startDate ?start ;
+                       cto:capacity ?capacity .
+            FILTER (YEAR(?start) = ?year && MONTH(?start) = ?month)
 
-    ?t rdfs:label ?trek .
-    FILTER (LANG(?trek) = "fr")
+            ?t rdfs:label ?trek .
+            FILTER (LANG(?trek) = "fr")
 
-    OPTIONAL {
-        ?booking cto:forDeparture ?departure ;
-                 cto:numberOfParticipants ?participants .
-        FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+            OPTIONAL {
+                ?booking cto:forDeparture ?departure ;
+                         cto:numberOfParticipants ?participants .
+                FILTER NOT EXISTS { ?booking cto:status cto:Cancelled }
+            }
+        }
+        GROUP BY ?departure ?trek ?start ?capacity
     }
+    FILTER (?free > 0)
 }
-GROUP BY ?departure ?trek ?start ?capacity
-HAVING (SUM(COALESCE(?participants, 0)) < ?capacity)
 ORDER BY ?start
 
 
@@ -356,6 +361,12 @@ WHERE {
     ?class rdfs:subClassOf* cto:Equipment ;
            rdfs:label ?category .
     FILTER (LANG(?category) = "fr")
+    # la catégorie la plus précise (avec l'inférence RDFS, l'article est aussi un cto:Equipment)
+    FILTER NOT EXISTS {
+        ?item a ?subClass .
+        ?subClass rdfs:subClassOf ?class .
+        FILTER (?subClass != ?class)
+    }
 
     OPTIONAL {
         SELECT ?item (MAX(?out) AS ?maxOut)
