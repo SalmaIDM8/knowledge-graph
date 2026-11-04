@@ -1,32 +1,19 @@
-"""Generate cto_data_operations.ttl (guides, clients, departures, bookings,
-rentals, reviews, guide unavailabilities).
+# Generates cto_data_operations.ttl from the catalogue (fixed seed: same output at each run).
+# Guides and departures are written below; clients, bookings, rentals and reviews are generated.
 
-Usage:  python generate_operations.py      (then: python validate.py)
-
-- Guides, departures and unavailabilities are written by hand below: they are
-  the business core and contain the edge cases used by the queries.
-- Clients, bookings, rentals and reviews are generated with a FIXED random
-  seed, so the file is the same at every run.
-- Trek durations, prices, required equipment and stocks are read from
-  cto_data_catalog.ttl, so both files stay consistent.
-- The generator respects the SHACL business rules (capacity, stock, booking
-  before departure, review after the trip...): the output must conform.
-"""
 import random
 from datetime import date, timedelta
 
 from rdflib import Graph, Namespace
 
 random.seed(2026)
-TODAY = date(2026, 10, 30)          # reference date: past vs future departures
+TODAY = date(2026, 10, 30)
 
 CTO = Namespace("http://ns.cto-trekking.org/schema#")
 D = "http://ns.cto-trekking.org/data#"
 local = lambda iri: "d:" + str(iri)[len(D):]
 
-# --------------------------------------------------------------------------
 # 1. Read the catalogue
-# --------------------------------------------------------------------------
 cat = Graph().parse("cto_data_catalog.ttl")
 treks = {}
 for t, dur, price, maxg in cat.query("""
@@ -39,13 +26,11 @@ for t, dur, price, maxg in cat.query("""
     }
 stock = {local(e): int(q) for e, q in cat.subject_objects(CTO.stockQuantity)}
 rental_price = {local(e): float(p) for e, p in cat.subject_objects(CTO.dailyRentalPrice)}
-packages = {}                        # trek -> [(package, supplement)]
+packages = {}
 for p, t in cat.subject_objects(CTO.includesTrek):
     packages.setdefault(local(t), []).append((local(p), float(cat.value(p, CTO.basePrice))))
 
-# --------------------------------------------------------------------------
 # 2. Guides (hand-written)
-# --------------------------------------------------------------------------
 GUIDES = {
     "d:guidePaul":   dict(given="Paul", family="Martin", born="1980-04-12", town="d:chamonix", nat="d:france",
                           langs=["d:french", "d:english", "d:italian"], certs=["d:certIFMGA", "d:certIML", "d:certWFR"],
@@ -71,7 +56,6 @@ GUIDES = {
     "d:guideYoussef": dict(given="Youssef", family="Amrani", born="1987-07-27", town="d:marrakesh", nat="d:morocco",
                           langs=["d:arabic", "d:french", "d:english"], certs=["d:certIML", "d:certWFR"],
                           areas=["d:atlas"], mail="youssef.amrani@cto-trekking.org"),
-    # Edge case: a new guide, no e-mail, never assigned to a departure
     "d:guideThomas": dict(given="Thomas", family="Petit", born="1998-12-01", town="d:toulouse", nat="d:france",
                           langs=["d:french"], certs=["d:certIML"], areas=["d:pyrenees"], mail=None),
 }
@@ -83,37 +67,29 @@ UNAVAILABILITIES = [
     ("d:unavSophie2027", "d:guideSophie", "2027-05-01", "2027-05-20", "knee surgery recovery"),
 ]
 
-# --------------------------------------------------------------------------
 # 3. Departures (hand-written): id, trek, start, capacity, lead, other guides, fill rate
-# --------------------------------------------------------------------------
 DEPARTURES = [
-    # past departures (2025 and summer 2026): reviews are possible
     ("d:dep2025TMB",        "d:trekTMB",        "2025-07-05", 12, "d:guidePaul",   ["d:guideSophie"], 0.5),
     ("d:dep2025MontBlanc",  "d:trekMontBlanc",  "2025-07-20",  2, "d:guideAnna",   [], 1.0),
     ("d:dep2025Inca",       "d:trekIncaTrail",  "2025-05-10", 16, "d:guideLucia",  [], 0.4),
     ("d:dep2026Annapurna",  "d:trekAnnapurna",  "2026-04-01", 12, "d:guideDawa",   [], 0.5),
     ("d:dep2026EBCSpring",  "d:trekEBC",        "2026-04-05", 12, "d:guidePemba",  [], 0.6),
-    ("d:dep2026TMBJuly",    "d:trekTMB",        "2026-07-04", 12, "d:guidePaul",   ["d:guideMarco"], 1.0),   # fully booked
-    ("d:dep2026TreCime",    "d:trekTreCime",    "2026-07-18", 15, "d:guideMarco",  [], 0.4),   # one-day trek
-    # Anna does not know the Pyrenees (Paul does but is on holidays) -> SHACL warning
+    ("d:dep2026TMBJuly",    "d:trekTMB",        "2026-07-04", 12, "d:guidePaul",   ["d:guideMarco"], 1.0),
+    ("d:dep2026TreCime",    "d:trekTreCime",    "2026-07-18", 15, "d:guideMarco",  [], 0.4),
     ("d:dep2026Vignemale",  "d:trekVignemale",  "2026-08-10",  6, "d:guideAnna",   [], 0.7),
     ("d:dep2026MontBlanc",  "d:trekMontBlanc",  "2026-08-11",  2, "d:guideMarco",  [], 1.0),
     ("d:dep2026TMBExpress", "d:trekTMBExpress", "2026-08-22", 10, "d:guideSophie", [], 0.6),
-    # future departures: pending bookings, no review yet
     ("d:dep2026Toubkal",    "d:trekToubkal",    "2026-12-05",  8, "d:guideYoussef", [], 0.3),
-    ("d:dep2027GR20",       "d:trekGR20",       "2027-06-14", 10, "d:guideSophie", [], 0.0),   # no booking yet
+    ("d:dep2027GR20",       "d:trekGR20",       "2027-06-14", 10, "d:guideSophie", [], 0.0),
     ("d:dep2027TMB",        "d:trekTMB",        "2027-07-03", 12, "d:guidePaul",   ["d:guideSophie"], 0.3),
     ("d:dep2027TreCime",    "d:trekTreCime",    "2027-07-10", 15, "d:guideMarco",  [], 0.4),
-    ("d:dep2027TMBFull",    "d:trekTMB",        "2027-07-17", 12, "d:guideMarco",  [], 1.0),   # fully booked
+    ("d:dep2027TMBFull",    "d:trekTMB",        "2027-07-17", 12, "d:guideMarco",  [], 1.0),
 ]
 
-# Hand-written scenario: these two groups rent all 6 harnesses at the same time
 ALL_HARNESSES = {"d:dep2026Vignemale": ("d:client03", 4), "d:dep2026MontBlanc": ("d:client04", 2)}
 
-# --------------------------------------------------------------------------
 # 4. Clients (generated)
-# --------------------------------------------------------------------------
-TOWNS = {  # town -> (country, main language)
+TOWNS = {
     "d:paris": ("d:france", "d:french"), "d:lyon": ("d:france", "d:french"), "d:nice": ("d:france", "d:french"),
     "d:marseille": ("d:france", "d:french"), "d:grenoble": ("d:france", "d:french"), "d:lille": ("d:france", "d:french"),
     "d:annecy": ("d:france", "d:french"), "d:london": ("d:unitedKingdom", "d:english"),
@@ -143,15 +119,12 @@ for i, (given, family) in enumerate(zip(GIVEN, FAMILY), start=1):
     if random.random() < 0.3:
         c["phone"] = "+33" + "".join(random.choice("0123456789") for _ in range(9))
     clients[f"d:client{i:02d}"] = c
-# Edge cases
-clients["d:client05"].update(mail=None, phone="+33612345678")    # phone only
-clients["d:client12"].update(conditions=["d:asthma"])            # will book the Everest trek -> warning
-NO_BOOKING = {"d:client19", "d:client20"}                         # clients who never booked
-LOYAL = "d:client01"                                              # client with many trips
+clients["d:client05"].update(mail=None, phone="+33612345678")
+clients["d:client12"].update(conditions=["d:asthma"])
+NO_BOOKING = {"d:client19", "d:client20"}
+LOYAL = "d:client01"
 
-# --------------------------------------------------------------------------
 # 5. Bookings, rentals, reviews (generated under the business rules)
-# --------------------------------------------------------------------------
 day = lambda s: date.fromisoformat(s)
 dep_info = {}
 for dep, trek, start, cap, lead, others, fill in DEPARTURES:
@@ -159,15 +132,14 @@ for dep, trek, start, cap, lead, others, fill in DEPARTURES:
     dep_info[dep] = dict(trek=trek, start=s, end=s + timedelta(days=treks[trek]["days"] - 1),
                          cap=cap, lead=lead, guides=[lead] + others, fill=fill)
 
-client_trips = {c: [] for c in clients}           # (start, end) of the client's active bookings
-rentals_out = []                                  # (start, end, item, quantity) of active rentals
+client_trips = {c: [] for c in clients}
+rentals_out = []
 bookings, rentals, reviews = [], [], []
 
 def overlaps(a, b):
     return a[0] <= b[1] and b[0] <= a[1]
 
 def stock_ok(item, period, q):
-    """Units out at each start date (the peak is always on a start date) <= stock."""
     out = [r for r in rentals_out if r[2] == item] + [(period[0], period[1], item, q)]
     for s, _, _, _ in out:
         if sum(qq for ss, ee, it, qq in out if ss <= s <= ee) > stock[item]:
@@ -190,7 +162,6 @@ def add_booking(dep, client, n, status, n_book, rent_for_all=None):
     if status == "d:Cancelled":
         return bid
     client_trips[client].append((info["start"], info["end"]))
-    # rentals: required equipment for some clients, plus optional poles / jacket
     period = (info["start"], info["end"])
     wanted = [e for e in trek["equipment"] if random.random() < 0.3]
     wanted += [e for e in ("d:trekkingPoles", "d:downJacket") if e not in wanted and random.random() < 0.1]
@@ -201,7 +172,6 @@ def add_booking(dep, client, n, status, n_book, rent_for_all=None):
         if stock_ok(item, period, q):
             rentals_out.append((info["start"], info["end"], item, q))
             rentals.append(dict(id=f"d:rental{len(rentals) + 1:03d}", booking=bid, item=item, q=q))
-    # reviews: only after the end of a confirmed trip, before TODAY
     if status == "d:Confirmed" and info["end"] < TODAY and random.random() < 0.4:
         rdate = min(info["end"] + timedelta(days=random.randint(1, 20)), TODAY)
         for g in info["guides"][: 1 + (random.random() < 0.3)]:
@@ -213,7 +183,6 @@ n_book = 0
 bookable = [c for c in clients if c not in NO_BOOKING]
 for dep, info in sorted(dep_info.items(), key=lambda kv: kv[1]["start"]):
     target, seats = round(info["cap"] * info["fill"]), 0
-    # the loyal client goes on every TMB departure
     free = lambda c: not any(overlaps((info["start"], info["end"]), p) for p in client_trips[c])
     if info["trek"] == "d:trekTMB" and info["start"] < TODAY and free(LOYAL):
         n_book += 1; add_booking(dep, LOYAL, 1, "d:Confirmed", n_book); seats += 1
@@ -228,30 +197,21 @@ for dep, info in sorted(dep_info.items(), key=lambda kv: kv[1]["start"]):
         client = random.choice(bookable)
         period = (info["start"], info["end"])
         if any(overlaps(period, p) for p in client_trips[client]):
-            continue                                   # a client cannot be on two trips at once
+            continue
         n = min(random.choice([1, 1, 1, 2, 2, 3, 4]), target - seats)
         if info["start"] > TODAY:
             status = random.choice(["d:Confirmed", "d:Pending", "d:Pending"])
         else:
             status = "d:Confirmed"
         n_book += 1; add_booking(dep, client, n, status, n_book); seats += n
-    # a few cancellations (they do not take seats)
     if info["fill"] > 0 and random.random() < 0.5:
         n_book += 1; add_booking(dep, random.choice(bookable), random.randint(1, 2), "d:Cancelled", n_book)
 
-# --------------------------------------------------------------------------
 # 6. Write Turtle
-# --------------------------------------------------------------------------
 lit = lambda s: '"' + s.replace('"', '\\"') + '"'
 dt = lambda x: f'"{x}"^^xsd:date'
-out = ["""###############################################################################
-#  CTO - Operations data  (GENERATED by generate_operations.py - do not edit)
-#
-#  Guides, unavailabilities, insurers, clients, departures, bookings, rentals
-#  and reviews. All catalogue resources (treks, places, languages,
-#  certifications, equipment...) are reused from cto_data_catalog.ttl.
-#  Reference date for past / future departures: """ + TODAY.isoformat() + """
-###############################################################################
+out = ["""# Operations: guides, clients, departures, bookings, rentals and reviews.
+# Fictional data, generated by generate_operations.py.
 
 @prefix cto:    <http://ns.cto-trekking.org/schema#> .
 @prefix d:      <http://ns.cto-trekking.org/data#> .
@@ -275,21 +235,21 @@ def person(iri, cls, p, extra):
     lines[-1] = lines[-1].rstrip(" ;") + " ."
     return "\n".join(lines) + "\n"
 
-out.append("\n# ----------------------------------------------------------------- GUIDES\n")
+out.append("\n# GUIDES\n")
 for g, p in GUIDES.items():
     out.append(person(g, "cto:Guide", p, [f"    cto:hasCertification {' , '.join(p['certs'])} ;",
                                           f"    cto:knowsArea {' , '.join(p['areas'])} ;"]))
 
-out.append("\n# --------------------------------------------------- GUIDE UNAVAILABILITIES\n")
+out.append("\n# GUIDE UNAVAILABILITIES\n")
 for u, g, f, t, why in UNAVAILABILITIES:
     out.append(f"{u} a cto:Unavailability ; cto:unavailableGuide {g} ;\n"
                f"    cto:fromDate {dt(f)} ; cto:toDate {dt(t)} ; cto:reason {lit(why)} .\n")
 
-out.append("\n# --------------------------------------------------------------- INSURERS\n")
+out.append("\n# INSURERS\n")
 for ins, label in zip(INSURERS, ["Alpine Assist", "TrekSafe Insurance", "WorldCover Travel"]):
     out.append(f'{ins} a cto:Insurer ; rdfs:label "{label}"@en .\n')
 
-out.append("\n# ---------------------------------------------------------------- CLIENTS\n")
+out.append("\n# CLIENTS\n")
 for c, p in clients.items():
     extra = []
     if p["insurer"]:
@@ -298,7 +258,7 @@ for c, p in clients.items():
         extra.append(f"    cto:hasMedicalCondition {' , '.join(p['conditions'])} ;")
     out.append(person(c, "cto:Client", p, extra))
 
-out.append("\n# ------------------------------------------------------------- DEPARTURES\n")
+out.append("\n# DEPARTURES\n")
 for dep, info in sorted(dep_info.items(), key=lambda kv: kv[1]["start"]):
     others = [g for g in info["guides"] if g != info["lead"]]
     out.append(f"{dep} a cto:Departure ; cto:ofTrek {info['trek']} ;\n"
@@ -306,19 +266,19 @@ for dep, info in sorted(dep_info.items(), key=lambda kv: kv[1]["start"]):
                f"    cto:capacity {info['cap']} ; cto:leadGuide {info['lead']}"
                + (f" ;\n    cto:hasGuide {' , '.join(others)}" if others else "") + " .\n")
 
-out.append("\n# --------------------------------------------------------------- BOOKINGS\n")
+out.append("\n# BOOKINGS\n")
 for b in bookings:
     out.append(f"{b['id']} a cto:Booking ; cto:bookedBy {b['client']} ; cto:forDeparture {b['dep']} ;\n"
                f"    cto:bookingDate {dt(b['date'])} ; cto:numberOfParticipants {b['n']} ;\n"
                f"    cto:status {b['status'].replace('d:', 'cto:')} ; cto:amountPaid {b['paid']:.2f}"
                + (f" ;\n    cto:withPackage {b['pkg']}" if b["pkg"] else "") + " .\n")
 
-out.append("\n# ---------------------------------------------------------------- RENTALS\n")
+out.append("\n# RENTALS\n")
 for r in rentals:
     out.append(f"{r['id']} a cto:Rental ; cto:forBooking {r['booking']} ; "
                f"cto:rentedItem {r['item']} ; cto:quantity {r['q']} .\n")
 
-out.append("\n# ---------------------------------------------------------------- REVIEWS\n")
+out.append("\n# REVIEWS\n")
 for r in reviews:
     out.append(f"{r['id']} a cto:Review ; cto:author {r['client']} ; cto:aboutGuide {r['guide']} ;\n"
                f"    cto:rating {r['rating']} ; cto:reviewDate {dt(r['date'])} .\n")
