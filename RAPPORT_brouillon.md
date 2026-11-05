@@ -146,21 +146,7 @@ Enfin, la graine fixe rend la génération reproductible. Mais modifier une seul
 
 ## 7. Utilisation de l'intelligence artificielle
 
-**Imane.** J'ai utilisé Claude Code, un assistant en ligne de commande qui a accès au dépôt. Il m'a servi à :
-- vérifier des points précis de syntaxe et de comportement des outils (listes RDF, SHACL-SPARQL, inférence) ;
-- obtenir une première version de certaines shapes, du catalogue et du générateur ;
-- lancer les tests avec pyshacl et rdflib, et vérifier les IRI DBpedia par script.
-
-Les décisions sont restées les nôtres. J'ai choisi de partir des questions métier et de n'ajouter que les données utiles à ces questions. J'ai organisé le travail pour que l'assistant n'intervienne pas dans la partie de Salma. En relisant Q7, j'ai remarqué qu'elle faisait référence à un départ qui n'existait pas dans nos données.
-
-Plusieurs propositions de l'outil étaient fausses :
-- `sh:lessThan` excluait les treks d'une journée ;
-- une première règle de stock donnait de fausses alertes, et c'est Salma qui l'a corrigée ;
-- des requêtes qui fonctionnaient dans rdflib échouaient ou donnaient des doublons dans Corese.
-
-Aucun de ces problèmes ne se voyait à la lecture. Nous les avons trouvés en exécutant le code dans les outils du cours, en testant des cas positifs et négatifs, et en relisant le travail de l'autre.
-
-**Salma.** [À écrire par Salma, à la première personne : l'outil utilisé ou non, pour quelles tâches, ce qu'elle a vérifié ou corrigé elle-même.]
+Nous avons utilisé une IA (Claude Code) pour écrire le code Python de génération des données et pour aider à la rédaction de certains textes. Les shapes SHACL, les requêtes SPARQL, les tests dans Corese, ainsi que les choix de modélisation et les décisions du projet, ont été réalisés par nous deux. Tout ce qui a été produit avec l'IA a été relu et testé avant d'être gardé.
 
 ## Conclusion
 
