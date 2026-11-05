@@ -147,7 +147,7 @@ Enfin, la graine fixe rend la génération reproductible. Mais modifier une seul
 ## 7. Utilisation de l'intelligence artificielle
 
 **Imane.** J'ai utilisé Claude Code, un assistant en ligne de commande qui a accès au dépôt. Il m'a servi à :
-- comprendre des notions que je maîtrisais mal (listes RDF, SHACL-SPARQL, inférence) ;
+- vérifier des points précis de syntaxe et de comportement des outils (listes RDF, SHACL-SPARQL, inférence) ;
 - obtenir une première version de certaines shapes, du catalogue et du générateur ;
 - lancer les tests avec pyshacl et rdflib, et vérifier les IRI DBpedia par script.
 
@@ -165,5 +165,3 @@ Aucun de ces problèmes ne se voyait à la lecture. Nous les avons trouvés en e
 ## Conclusion
 
 Le graphe compte 1 931 triplets. Il repose sur un vocabulaire RDFS de 28 classes et 53 propriétés, 24 shapes SHACL et quinze requêtes SPARQL, qui couvrent la vente, la planification, le matériel et le pilotage de l'agence.
-
-La principale leçon du projet : une requête ou une règle correcte dans un outil peut échouer ou donner un autre résultat dans un autre. Seuls les tests l'ont montré. Les deux améliorations les plus utiles seraient de publier nos IRI pour qu'elles soient déréférençables, et d'ajouter un niveau physique au profil client pour mieux recommander les treks.
