@@ -150,4 +150,6 @@ Nous avons utilisé une IA (Claude Code) pour écrire le code Python de généra
 
 ## Conclusion
 
-Le graphe compte 1 931 triplets. Il repose sur un vocabulaire RDFS de 28 classes et 53 propriétés, 24 shapes SHACL et quinze requêtes SPARQL, qui couvrent la vente, la planification, le matériel et le pilotage de l'agence.
+Nous avons construit un graphe de connaissances de 1 931 triplets pour une agence de trekking : un vocabulaire RDFS de 28 classes et 53 propriétés, 24 shapes SHACL et quinze requêtes SPARQL. Le graphe répond aux questions des quatre profils de l'agence (vente, planning, matériel, direction), et les shapes détectent les erreurs que nous avons volontairement introduites dans les données.
+
+Le projet nous a permis d'utiliser ensemble les standards du Web sémantique : RDF pour représenter les données, RDFS pour le vocabulaire, SHACL pour la validation, SPARQL pour l'interrogation, et DBpedia pour relier nos lieux au Web de données. Les limites décrites dans la partie 6, en particulier la gestion du matériel par stock et l'absence d'OWL, sont les pistes que nous suivrions pour faire évoluer le projet.
