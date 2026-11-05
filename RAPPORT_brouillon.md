@@ -1,6 +1,9 @@
-# Graphe de connaissances instrumenté pour une agence de trekking
-
-*Mini-projet Web of Linked Data (EIENWD9), Université Côte d'Azur, Parcours IA & Data. Binôme : Imane AMRAOUI, Salma IDMANSOUR.*
+<div class="cover">
+<h1>Graphe de connaissances instrumenté pour une agence de trekking</h1>
+<p class="sub">Web of Linked Data (EIENWD9) · Mini-projet</p>
+<p class="authors">Imane AMRAOUI · Salma IDMANSOUR</p>
+<p class="date">Université Côte d'Azur · Novembre 2026</p>
+</div>
 
 ## 1. Contexte, objectifs et démarche
 
