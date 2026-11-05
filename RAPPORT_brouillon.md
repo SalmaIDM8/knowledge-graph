@@ -66,6 +66,10 @@ Q10 demande aussi un raisonnement. Ce qui compte, c'est le nombre maximal d'arti
 
 Nous avons vérifié la plausibilité de chaque résultat. Q6, Q8 et Q13 ont été recalculées indépendamment en Python à partir des mêmes données. Q12 a aussi été testée sur des cas où la réponse doit être négative : une contre-indication médicale, un conflit de dates.
 
+Deux conventions sont à connaître pour lire les résultats :
+- **La date de référence du scénario est le 30 octobre 2026.** Elle est écrite en dur dans Q8 : un groupe compte comme « encadré » seulement si son départ s'est terminé avant cette date. Nous n'utilisons pas `NOW()`, sinon le résultat changerait selon le jour d'exécution.
+- **Q13 compte aussi les départs futurs.** Son chiffre d'affaires est la somme des montants déjà encaissés, y compris les acomptes des réservations à venir, et non le prix total des voyages. Son taux de remplissage inclut lui aussi les réservations futures non annulées.
+
 ## 4. Validation avec SHACL
 
 RDFS permet des inférences, mais il ne rejette jamais une donnée. Une difficulté de 12 ou une réservation pour zéro personne passent sans erreur. Pour contrôler notre graphe, `cto_shapes.ttl` définit 24 shapes SHACL, sur trois niveaux.
