@@ -1,129 +1,165 @@
 # Graphe de connaissances instrumenté pour une agence de trekking
 
-*Mini-projet Web sémantique (EIENWD9), Université Côte d'Azur. Binôme : Imane AMRAOUI, Salma IDMANSOUR.*
+*Mini-projet Web of Linked Data (EIENWD9), Université Côte d'Azur, Parcours IA & Data. Binôme : Imane AMRAOUI, Salma IDMANSOUR.*
 
-## 1. Sujet, démarche et répartition
+## 1. Contexte, objectifs et démarche
 
-L'énoncé parle d'une *trekking company* dans son titre et d'un *cycling tour operator* dans son texte. Nous avons choisi le trekking et gardé les noms de fichiers imposés (`cto_*`). Notre agence fictive vend des treks réels (Tour du Mont-Blanc, GR20, camp de base de l'Everest, Chemin de l'Inca…) et organise des départs datés, encadrés par ses guides, avec location de matériel.
+Dans ce mini-projet, nous avons conçu et exploité un graphe de connaissances qui représente l'activité d'une agence fictive de trekking : treks, départs, itinéraires, lieux, clients, guides, réservations, locations de matériel et avis.
 
-Nous n'avons pas commencé par le vocabulaire mais par les **questions que l'agence se pose** : un vendeur cherche un trek pour un client, le responsable du planning cherche un guide libre, le magasin vérifie son stock, la direction regarde son chiffre d'affaires. Nous en avons retenu quinze (section 3). Chaque classe, chaque règle et chaque donnée du graphe doit servir à au moins une de ces questions. Quand une requête donnait un résultat vide ou sans intérêt, nous avons complété les données plutôt que de modifier la question.
+L'énoncé parle de « trekking company » dans son titre et de « cycling tour operator » dans sa description. Nous avons retenu le trekking et conservé les noms de fichiers `cto_*` demandés. Le catalogue s'appuie sur des destinations réelles, comme le Tour du Mont-Blanc, le GR20, le camp de base de l'Everest et le Chemin de l'Inca. Chaque départ a des dates, une capacité et une équipe de guides. L'agence loue aussi du matériel.
 
-Salma a écrit le vocabulaire RDFS et les requêtes SPARQL. Imane a écrit les shapes SHACL, le catalogue et le générateur de données opérationnelles. Le travail est passé par des *issues* et des *pull requests* sur GitHub : chacune relisait la PR de l'autre, et une validation SHACL automatique tournait à chaque PR.
+Notre démarche est partie des besoins de l'agence plutôt que d'une liste de classes. Nous avons identifié quatre profils d'utilisateurs :
+- un conseiller, qui cherche une offre adaptée à un client ;
+- un responsable, qui planifie les départs et affecte les guides ;
+- un gestionnaire, qui suit les stocks de matériel ;
+- la direction, qui analyse l'activité.
 
-## 2. Modélisation RDFS (`cto_schema.ttl`)
+Ces besoins sont devenus quinze questions de compétence. Chaque classe, chaque règle et chaque donnée du graphe sert au moins à l'une d'elles. Quand une requête donnait un résultat vide, nous avons complété les données plutôt que de changer la question.
 
-Le vocabulaire `cto:` compte 28 classes et 53 propriétés, labellisées en anglais et en français. Nous réutilisons FOAF pour les personnes (`foaf:Person`, `foaf:givenName`, `foaf:mbox`), schema.org pour la date de naissance et WGS84 pour les coordonnées. Nos classes s'y rattachent par `rdfs:subClassOf` (`cto:Client` et `cto:Guide` sont des `foaf:Person`) : un outil qui ne connaît que FOAF comprend donc déjà une partie de nos données.
+Salma a pris en charge le vocabulaire RDFS et les requêtes SPARQL. Imane a réalisé les shapes SHACL, le catalogue et le générateur de données opérationnelles. Le travail a été organisé avec des issues et des pull requests GitHub. Chacune a relu les modifications de l'autre, et une validation SHACL automatique était exécutée à chaque pull request.
 
-**Le choix le plus important est de séparer `Trek` et `Departure`.** Un trek est un produit du catalogue, par exemple le Tour du Mont-Blanc. Un départ est une session datée de ce trek, avec sa capacité et son équipe. Les réservations portent sur un départ, pas sur un trek. Sans cette séparation, il serait impossible de compter les places restantes ou de vérifier qu'un guide n'est pas à deux endroits à la fois. Nous avons hésité à faire la même chose pour le matériel (un objet par casque physique). Nous avons gardé un modèle par stock (« 10 casques »), plus simple, mais qui ne permet pas de suivre un casque précis.
+## 2. Conception du vocabulaire RDFS
 
-Les autres choix de modélisation :
-- **Hiérarchies utiles aux requêtes** : `Trek` a trois sous-classes (`HutToHutTrek`, `CampingTrek`, `SummitAscent`), et un trek peut en avoir plusieurs (le GR20 se fait en refuge et en bivouac). Les lieux ont aussi une hiérarchie (`MountainRange`, `Summit`, `Settlement`…), ainsi que le matériel (`CampingGear`, `TechnicalGear`).
-- **Un seul domaine par propriété.** Deux `rdfs:domain` signifient « les deux à la fois », et non « l'un ou l'autre ». Pour `cto:speaks`, utilisée par les clients comme par les guides, nous avons donc mis `foaf:Person` en domaine.
-- **`cto:leadGuide` est une sous-propriété de `cto:hasGuide`** : le guide principal fait automatiquement partie de l'équipe du départ.
-- **L'itinéraire est une `rdf:List`** d'étapes, car l'ordre des jours compte et un simple ensemble de triplets le perdrait.
-- **Les indisponibilités sont une relation n-aire** (`cto:Unavailability` : un guide, deux dates, un motif). Un guide peut avoir plusieurs périodes d'absence, ce qu'on ne peut pas exprimer avec deux propriétés posées directement sur le guide.
-- **Calculer plutôt que stocker.** La note moyenne d'un guide ou le nombre de places libres ne sont pas écrits dans les données : ils sont calculés par les requêtes, et restent ainsi toujours justes.
+Le fichier `cto_schema.ttl` définit 28 classes et 53 propriétés, avec des libellés en français et en anglais. Il réutilise des vocabulaires établis quand c'est pertinent : FOAF pour les personnes, schema.org pour la date de naissance, WGS84 pour les coordonnées. `cto:Client` et `cto:Guide` sont déclarées sous-classes de `foaf:Person`. Ainsi, un outil qui connaît FOAF interprète déjà une partie de nos ressources.
 
-RDFS ne permet pas de déclarer `cto:locatedIn` transitive. Les requêtes utilisent donc le chemin `cto:locatedIn*` (Chamonix → massif du Mont-Blanc → Alpes grées → Alpes).
+Le choix structurant du modèle est la distinction entre `cto:Trek` et `cto:Departure` :
+- un trek est une offre du catalogue, par exemple le Tour du Mont-Blanc ;
+- un départ est une session concrète de cette offre, avec des dates, une capacité et une équipe.
 
-## 3. Scénarios et questions de compétence (`cto_query.txt`)
+Les réservations portent sur le départ, pas sur le trek. Cette séparation permet d'avoir plusieurs sessions d'un même trek, de calculer les places restantes et de détecter les conflits de planning des guides.
 
-Les quinze questions sont regroupées par utilisateur. Chacune s'exécute seule, sur l'union du schéma et des données. Ses paramètres (client, départ, période) se changent dans un `VALUES`. La dernière colonne donne le résultat obtenu sur nos données.
+Le matériel est modélisé par catégorie et par quantité en stock, et non par objet physique. C'est plus simple pour gérer les disponibilités, mais on ne peut pas suivre l'historique d'un équipement précis.
+
+Les treks sont spécialisés en `HutToHutTrek`, `CampingTrek` et `SummitAscent`. Un trek peut avoir plusieurs de ces types : le GR20 se fait à la fois en refuge et en bivouac. Les lieux (`MountainRange`, `Summit`, `Settlement`…) et le matériel (`CampingGear`, `TechnicalGear`) ont aussi leurs hiérarchies.
+
+Plusieurs décisions évitent des interprétations incorrectes de RDFS. Déclarer deux `rdfs:domain` sur une même propriété signifie que le sujet appartient aux deux classes à la fois (intersection), et non à l'une ou l'autre. Nous déclarons donc un seul domaine, et pour une propriété partagée nous choisissons une super-classe : `cto:speaks`, utilisée par les clients comme par les guides, a pour domaine `foaf:Person`. Le guide principal est relié par `cto:leadGuide`, déclarée sous-propriété de `cto:hasGuide` : il fait donc aussi partie de l'équipe du départ.
+
+L'itinéraire est une `rdf:List`, pour garder l'ordre des étapes. Les indisponibilités des guides sont des ressources `cto:Unavailability` qui regroupent le guide, une période et un motif. C'est une relation n-aire, car un guide peut avoir plusieurs absences. Enfin, les valeurs dérivées, comme la note moyenne d'un guide ou les places restantes, sont calculées par les requêtes au lieu d'être stockées. Elles ne peuvent donc pas se contredire avec les données sources.
+
+RDFS ne permet pas de déclarer `cto:locatedIn` transitive. Les requêtes utilisent donc le chemin `cto:locatedIn*` (de Chamonix au massif du Mont-Blanc, puis aux Alpes).
+
+## 3. Questions de compétence et requêtes SPARQL
+
+Les quinze requêtes de `cto_query.txt` sont regroupées par profil. Chacune est précédée de sa question métier. Ses paramètres (client, départ, période) sont réunis dans un `VALUES`, ce qui permet de tester d'autres cas facilement. La dernière colonne du tableau donne le résultat obtenu sur nos données.
 
 | | Question | Ce qu'elle mobilise | Résultat |
 |---|---|---|---|
-| **Vente** | Q1 Treks faciles (difficulté ≤ 3) de moins de 5 jours, label en français sinon en anglais | `subClassOf*`, `COALESCE` | 3 treks |
-| | Q2 Départs de juillet 2027 qui ont encore des places | sous-requête avec `SUM`, `FILTER` | 2 départs (8 et 9 places) |
-| | Q3 Treks qui dépassent 4 000 m, avec l'altitude donnée par DBpedia | requête fédérée `SERVICE` | (en ligne) |
-| | Q4 Treks des Alpes ou de l'Himalaya les plus proches de chez un client | `BIND` d'une distance | 5 treks classés |
+| **Vente** | Q1 Treks de difficulté ≤ 3 et de moins de 5 jours, libellé en français sinon en anglais | `subClassOf*`, `COALESCE` | 3 treks |
+| | Q2 Départs de juillet 2027 qui ont encore des places | sous-requête, `SUM`, `FILTER` | 2 départs (8 et 9 places) |
+| | Q3 Treks qui dépassent 4 000 m, avec l'altitude donnée par DBpedia | requête fédérée `SERVICE` | en ligne |
+| | Q4 Treks des Alpes ou de l'Himalaya les plus proches d'un client | `BIND` d'une distance | 5 treks classés |
 | | Q5 Étapes d'un trek, dans l'ordre, et lieu de chaque nuit | parcours d'une `rdf:List` | 11 étapes |
-| **Clients** | Q6 Réservations actives et montant payé par client, y compris ceux qui n'ont jamais voyagé | `OPTIONAL`, agrégats | 20 clients |
+| **Clients** | Q6 Réservations actives et montant payé, y compris pour les clients qui n'ont jamais voyagé | `OPTIONAL`, agrégats | 20 clients |
 | | Q12 Ce client peut-il partir sur ce départ ? | `ASK` | vrai |
-| **Planning** | Q7 Guides qui ont *toutes* les certifications exigées, connaissent la zone et sont libres | double `FILTER NOT EXISTS`, `MINUS` | Keller, Rossi |
+| **Planning** | Q7 Guides qui ont toutes les certifications, connaissent la zone et sont libres | double `FILTER NOT EXISTS`, `MINUS` | Keller, Rossi |
 | | Q8 Groupes encadrés, note moyenne et certifications de chaque guide | trois sous-requêtes | 9 guides |
 | | Q9 Participants sans langue commune avec leur guide | `FILTER NOT EXISTS` | 7 participants |
-| **Matériel** | Q10 Stock restant en août 2026 par catégorie, et articles épuisés | sous-requêtes imbriquées | 10 articles, baudriers épuisés |
-| | Q11 Matériel loué par chaque participant d'un départ, et son coût | coût calculé dans `SUM` | 4 lignes |
+| **Matériel** | Q10 Stock restant en août 2026, par catégorie, et articles épuisés | sous-requêtes imbriquées | 10 articles, baudriers épuisés |
+| | Q11 Matériel loué par chaque participant d'un départ, et coût | calcul dans `SUM` | 4 lignes |
 | **Direction** | Q13 Chiffre d'affaires et taux de remplissage par massif | agrégats sur `locatedIn*` | 6 massifs |
-| | Q14 Massif préféré de chaque nationalité (avec les égalités) | « le maximum de chaque groupe » | 11 lignes |
+| | Q14 Massif préféré de chaque nationalité, ex æquo compris | maximum par groupe | 11 lignes |
 | | Q15 Fiche complète d'un départ | `CONSTRUCT` | sous-graphe de 61 triplets |
 
-La question la plus intéressante est **Q7**, car c'est une quantification universelle. Un guide convient s'il n'existe **aucune** certification exigée par le trek qu'il n'ait pas. SPARQL n'a pas de « pour tout ». Nous l'écrivons donc avec deux `FILTER NOT EXISTS` imbriqués, puis nous retirons avec `MINUS` les guides déjà pris ou indisponibles à ces dates. Q10 a aussi demandé de la réflexion. Le nombre de baudriers sortis varie d'un jour à l'autre, et c'est le pic qui compte. Ce pic tombe toujours un jour de début de départ, car c'est le seul moment où des locations s'ajoutent. Il suffit donc de compter les locations en cours à chaque date de début.
+Q7 illustre une quantification universelle. Un guide est éligible s'il n'existe aucune certification exigée par le trek qu'il ne possède pas. SPARQL n'a pas d'opérateur « pour tout » : cette condition s'écrit avec deux `FILTER NOT EXISTS` imbriqués. Les guides déjà affectés à un autre départ, ou indisponibles sur la période, sont ensuite retirés avec `MINUS`.
 
-Nous avons vérifié la plausibilité de chaque résultat. Q6, Q8 et Q13 ont été recalculées en Python à partir des mêmes données. Q12 a aussi été testée sur des cas où la réponse doit être « non » : contre-indication médicale, conflit de dates.
+Q10 demande aussi un raisonnement. Ce qui compte, c'est le nombre maximal d'articles loués en même temps. Ce pic tombe toujours sur une date de début de départ, puisque c'est le seul moment où de nouvelles locations commencent. Il suffit donc de compter les locations en cours à ces dates.
 
-## 4. Contraintes SHACL (`cto_shapes.ttl`)
+Nous avons vérifié la plausibilité de chaque résultat. Q6, Q8 et Q13 ont été recalculées indépendamment en Python à partir des mêmes données. Q12 a aussi été testée sur des cas où la réponse doit être négative : une contre-indication médicale, un conflit de dates.
 
-RDFS déduit des faits mais ne refuse jamais rien : une difficulté de 12 ou une réservation pour 0 personne passent sans erreur. Les 24 shapes ajoutent ce contrôle, à trois niveaux.
+## 4. Validation avec SHACL
 
-1. **Des contraintes de forme** : cardinalités, types, bornes (difficulté entre 1 et 5, note entre 1 et 5), formats (`sh:pattern` pour les `mailto:`, les `tel:` et les IRI DBpedia), un seul label par langue (`sh:uniqueLang`), un statut choisi dans une liste (`sh:in`), et une date de début antérieure ou égale à la date de fin. Nous avions d'abord mis `sh:lessThan`, qui interdisait les treks d'une journée : `sh:lessThanOrEquals` les accepte.
-2. **Des contraintes logiques** : un client doit avoir un e-mail **ou** un téléphone (`sh:or`), et un guide ne peut pas être un client (`sh:not`).
-3. **Quinze règles métier en SHACL-SPARQL**, que la forme seule ne peut pas exprimer. Par exemple :
-   - pas de surréservation ;
-   - pas de guide sur deux départs qui se chevauchent, ni pendant une indisponibilité ;
-   - le guide principal a les certifications exigées ;
-   - le stock de matériel suffit ;
-   - une réservation est faite avant le départ ;
-   - un avis n'est donné qu'après un voyage terminé avec ce guide ;
-   - pas de cycle dans `cto:locatedIn` ;
-   - une étape par jour d'itinéraire.
+RDFS permet des inférences, mais il ne rejette jamais une donnée. Une difficulté de 12 ou une réservation pour zéro personne passent sans erreur. Pour contrôler notre graphe, `cto_shapes.ttl` définit 24 shapes SHACL, sur trois niveaux.
 
-Nous distinguons ce qui est **faux** (`sh:Violation`) de ce qui est **possible mais à surveiller** (`sh:Warning`). Un guide qui ne connaît pas la région, ou un client asthmatique inscrit pour l'Everest, ne sont pas des erreurs de données, mais l'agence doit être prévenue. SHACL est aussi plus strict que notre schéma sur un point voulu. En RDFS, le point culminant d'un trek peut être n'importe quel lieu (le col du Thorong La par exemple). En SHACL, une `SummitAscent` doit viser un `Summit`.
+**1. Les contraintes de forme :**
+- cardinalités (`sh:minCount`, `sh:maxCount`) et types (`sh:datatype`, `sh:class`) ;
+- bornes : difficulté et note entre 1 et 5 ;
+- formats avec `sh:pattern` : `mailto:`, `tel:`, IRI DBpedia ;
+- un seul libellé par langue (`sh:uniqueLang`) ;
+- un statut choisi dans une liste (`sh:in`) ;
+- une date de début antérieure ou égale à la date de fin.
 
-Une shape protège aussi le lien entre nos deux fichiers de données. Elle signale deux ressources de même classe qui portent le même label. Si le fichier des opérations redéclarait la langue « French » au lieu de réutiliser `d:french` du catalogue, l'erreur serait détectée.
+Pour les dates, un premier essai avec `sh:lessThan` interdisait les treks d'une journée. `sh:lessThanOrEquals` a corrigé ce cas.
 
-**Test des shapes.** Sur les données réelles, nous avons injecté quatorze erreurs, une par règle à tester : départ qui finit avant de commencer, réservation pour 0 personne, statut écrit en texte au lieu d'une valeur de la liste, surréservation, guide placé pendant son congé, baudrier en rupture de stock, note de 6/5, séjour qui ne contient pas le trek réservé, cycle dans les lieux, langue déclarée deux fois, durée en double, e-mail écrit comme une chaîne, guide déclaré client, départ sans date de fin. Les quatorze sont détectées par la règle attendue. Un cas témoin (la même surréservation, mais sur une réservation annulée) ne déclenche rien, comme il se doit. Ce test a aussi montré une limite : l'erreur de stock est signalée sur une location déjà existante, et non sur celle qui vient d'être ajoutée et qui a causé le dépassement.
+**2. Les contraintes logiques :** un client doit avoir un e-mail ou un téléphone (`sh:or`), et un guide ne peut pas être aussi client (`sh:not`).
 
-## 5. Données et liens LOD (`cto_data_catalog.ttl`, `cto_data_operations.ttl`)
+**3. Quinze règles métier en SHACL-SPARQL (`sh:sparql`)** : pas de surréservation, pas de conflit d'affectation ni d'indisponibilité des guides, certifications du guide principal, stock suffisant, réservation antérieure au départ, avis seulement après un voyage terminé, pas de cycle dans `cto:locatedIn`, une étape par jour d'itinéraire.
 
-Le **catalogue** est écrit à la main à partir de données réelles : 10 treks, 3 séjours, 10 articles de matériel et une hiérarchie de massifs. Nous avons relié 85 lieux et sentiers à DBpedia par `owl:sameAs`, et un script a vérifié que chaque IRI existe (en suivant les redirections). Les coordonnées et les altitudes viennent de DBpedia. Nous ne mettons `owl:sameAs` qu'entre choses vraiment identiques. Le sentier du Tour du Mont-Blanc est lié à `dbr:Tour_du_Mont_Blanc`, mais notre trek ne l'est pas, car c'est un produit commercial (prix, durée, guides), pas le sentier lui-même. Affirmer qu'ils sont identiques donnerait au sentier DBpedia un prix et des départs.
+Nous distinguons les violations (`sh:Violation`), qui sont des données à corriger, des avertissements (`sh:Warning`), qui demandent une vérification humaine. Par exemple, un guide qui ne connaît pas la région, ou un client asthmatique inscrit au trek de l'Everest, déclenchent un avertissement et non un rejet. SHACL est aussi plus strict que le schéma sur un point voulu : un `SummitAscent` doit viser un `Summit`, alors que RDFS accepte n'importe quel lieu.
 
-Les **opérations** sont produites par un script Python (`generate_operations.py`, rdflib, graine aléatoire fixe). Les situations importantes sont écrites à la main : 9 guides, 15 départs et 4 indisponibilités. Le volume est généré : 20 clients, 54 réservations, 28 locations et 15 avis. Le générateur lit les durées, les prix et le matériel dans le catalogue, et respecte les règles SHACL. Nous avons ajouté exprès les cas dont les requêtes avaient besoin : un départ complet en juillet 2027 (Q2), deux guides déjà pris aux dates du Tre Cime (Q7), six baudriers loués en même temps en août 2026 (Q10). Nous avons aussi ajouté des cas limites : un départ sans réservation, des clients qui n'ont jamais voyagé, un client joignable seulement par téléphone, un trek d'un jour.
+Une shape protège la cohérence entre le catalogue et les opérations : elle signale deux ressources de même classe qui portent le même libellé, par exemple une langue « French » déclarée deux fois au lieu d'être réutilisée.
 
-Au total, le graphe compte 1 931 triplets. La validation ne donne **aucune violation et deux avertissements voulus** (les deux situations à surveiller décrites en section 4). Selon la spécification SHACL, un avertissement suffit pour que le rapport indique `sh:conforms false`. Notre script `validate.py` considère donc les avertissements comme acceptables, mais pyshacl lancé sans option affichera `Conforms: False`.
+**Test des règles.** Nous avons introduit quatorze erreurs dans les données réelles :
+- dates inversées, départ sans date de fin ;
+- réservation pour zéro personne, statut invalide ;
+- surréservation, guide affecté pendant un congé, stock insuffisant ;
+- note supérieure à 5 ;
+- séjour qui ne contient pas le trek réservé ;
+- cycle de localisation, langue dupliquée, durée en double ;
+- e-mail écrit comme un simple texte ;
+- guide déclaré client.
 
-## 6. Recul : outils, limites et améliorations
+Les quatorze ont été détectées par les règles attendues. Un cas témoin, la même surréservation mais sur une réservation annulée, ne déclenche rien, comme prévu. Ce test a aussi montré une limite : en cas de dépassement de stock, le rapport signale une location déjà présente, et non la nouvelle location qui a causé le dépassement.
 
-**Les résultats dépendent de l'outil.** Nous avons développé avec rdflib et pyshacl, puis tout relancé dans Corese 4.5, l'outil des TD. Trois différences sont apparues :
-- **Q2** était refusée par Corese, qui n'accepte pas un `ORDER BY` après `HAVING`. Nous l'avons réécrite avec une sous-requête et un `FILTER`, une forme acceptée partout.
-- **Q10** : quand le schéma est chargé, l'inférence RDFS de Corese ajoute à chaque baudrier le type `cto:Equipment`, en plus de `cto:TechnicalGear`. Q10 affichait alors chaque article dans deux catégories (17 lignes au lieu de 10). Nous gardons maintenant seulement la catégorie la plus précise. La requête donne 10 lignes avec ou sans inférence.
-- **Les contraintes `sh:sparql` ne sont pas évaluées par la validation SHACL de Corese.** Un guide placé pendant son congé n'est détecté que par pyshacl. Nos quinze règles métier ne sont donc vérifiées que par pyshacl, qui est aussi l'outil de notre intégration continue.
+## 5. Données et liens avec le Web de données
 
-De plus, **Q3** interroge DBpedia en direct : elle demande un accès Internet et échoue si DBpedia est indisponible. rdflib n'envoie pas nos variables locales au service distant, c'est pourquoi la liste des points à interroger est écrite dans un `VALUES`.
+Les données sont réparties entre `cto_data_catalog.ttl` et `cto_data_operations.ttl`.
 
-**Limites du modèle :**
-- le matériel est géré par stock et non par objet ;
+**Le catalogue** est écrit à la main à partir d'informations réelles : 10 treks, 3 séjours, 10 articles de matériel et une hiérarchie de massifs.
+
+**Les opérations** sont produites par `generate_operations.py` (rdflib, graine aléatoire fixe) :
+- les situations clés sont écrites à la main : 9 guides, 15 départs, 4 indisponibilités ;
+- le script génère le reste : 20 clients, 54 réservations, 28 locations et 15 avis ;
+- il reprend les durées, les prix et le matériel du catalogue, et respecte les règles SHACL.
+
+Nous avons ajouté des situations ciblées pour les requêtes : un départ complet en juillet 2027 (Q2), deux guides déjà pris aux dates du Tre Cime (Q7), six baudriers loués en même temps en août 2026 (Q10). Nous avons aussi ajouté des cas limites : un départ sans réservation, des clients qui n'ont jamais voyagé, un client joignable seulement par téléphone, un trek d'une journée.
+
+Le graphe compte 1 931 triplets. Les lieux et sentiers sont reliés à DBpedia par 85 liens `owl:sameAs`. Toutes ces IRI ont été vérifiées par script, en suivant les redirections. Les coordonnées et les altitudes viennent de DBpedia.
+
+Nous n'utilisons `owl:sameAs` que pour deux ressources qui désignent vraiment la même chose. Le sentier du Tour du Mont-Blanc est lié à `dbr:Tour_du_Mont_Blanc`. Notre offre de trek ne l'est pas : elle a ses propres prix, durées et départs, que l'on attribuerait sinon au sentier.
+
+La validation donne aucune violation et deux avertissements voulus. Selon la spécification SHACL, un avertissement suffit pour que le rapport ne soit pas conforme : pyshacl lancé sans option affiche donc `Conforms: False`. Notre script `validate.py` accepte les avertissements et n'échoue que sur les violations.
+
+## 6. Analyse critique, limites et perspectives
+
+En faisant tourner notre travail dans plusieurs outils, nous avons trouvé des différences importantes. Nous avons développé avec rdflib et pyshacl, puis exécuté les requêtes dans Corese 4.5, l'outil utilisé en TD.
+- **Q2** a dû être réécrite, car Corese refusait un `ORDER BY` placé après `HAVING`. Une sous-requête suivie d'un `FILTER` fonctionne dans les deux outils.
+- **Q10** : quand le schéma est chargé, l'inférence RDFS de Corese ajoute le type `cto:Equipment` aux baudriers déjà typés `cto:TechnicalGear`. Les articles apparaissaient alors dans deux catégories (17 lignes au lieu de 10). Nous ne gardons plus que la catégorie la plus précise, et le résultat est le même avec ou sans inférence.
+- **Les contraintes `sh:sparql`** n'ont pas été évaluées par la validation SHACL de Corese lors de nos essais. Des règles comme « un guide affecté pendant son congé » ne sont donc vérifiées que par pyshacl, qui reste l'outil de l'intégration continue.
+
+Q3 dépend de DBpedia et donc d'une connexion Internet : c'est une limite de reproductibilité. De plus, rdflib ne transmet pas nos variables locales au service distant. Les ressources à interroger sont donc écrites dans un `VALUES`.
+
+Le modèle a aussi ses limites :
+- le matériel est géré par quantité et non par exemplaire ;
 - une location reprend les dates du départ ;
-- la « distance » de Q4 est le carré d'une distance en degrés, car SPARQL n'a pas de trigonométrie : elle suffit pour classer, pas pour donner des kilomètres ;
-- le client n'a pas de niveau physique, alors que ce serait le premier critère réel pour choisir un trek ;
-- nos IRI (`http://ns.cto-trekking.org/…#`) suivent les principes Linked Data pour le nommage et les liens. Mais elles ne sont publiées sur aucun serveur : on ne peut pas les déréférencer, et le troisième principe n'est donc pas respecté.
+- la proximité de Q4 est le carré d'une distance en degrés (SPARQL n'a pas de trigonométrie) : elle suffit pour classer, pas pour mesurer en kilomètres ;
+- le client n'a pas de niveau physique, qui serait pourtant le premier critère pour recommander un trek.
 
-Un dernier point pratique : comme le générateur part d'une graine aléatoire, changer une seule ligne de ses listes modifie toutes les données générées. Il faut donc figer les données avant de recopier des résultats dans le rapport.
+Nos IRI suivent les conventions Linked Data, mais elles ne sont publiées sur aucun serveur. On ne peut pas les déréférencer, et le troisième principe Linked Data n'est donc pas respecté. Les mettre en ligne serait une amélioration importante.
 
-**Ce qu'OWL apporterait :**
-- `cto:locatedIn` transitive, au lieu des chemins `*` ;
-- des propriétés inverses (`cto:hasBooking` / `cto:bookedBy`) ;
-- `owl:disjointWith` entre `Client` et `Guide` ;
-- des classes définies (« départ complet », « guide éligible ») calculées par le raisonneur.
+OWL permettrait d'aller plus loin : `cto:locatedIn` transitive, des propriétés inverses, des classes disjointes, ou des classes définies comme « départ complet » et « guide éligible ». OWL déduirait ces faits, mais il ne remplacerait pas SHACL. Avec OWL, un guide déclaré client rend le graphe incohérent. Avec SHACL, il produit un message qui dit précisément quoi corriger.
 
-OWL **déduirait** ces faits, mais il ne remplacerait pas SHACL, qui **refuse** les données fausses. Avec OWL, un guide déclaré client rendrait le graphe incohérent. Avec SHACL, il produit un message précis qui dit quoi corriger.
+Enfin, la graine fixe rend la génération reproductible. Mais modifier une seule liste du générateur change une grande partie des données. Il faut donc figer les données avant de recopier des résultats chiffrés dans le rapport.
 
-## 7. Utilisation de l'IA
+## 7. Utilisation de l'intelligence artificielle
 
-**Imane : Claude Code (Anthropic), un assistant en ligne de commande avec accès au dépôt.**
-- *Ce que l'outil a fait :*
-  - il m'a expliqué les notions que je maîtrisais mal (listes RDF, SHACL-SPARQL, inférence), avec des exemples ;
-  - il a proposé une première version des shapes, du catalogue et du générateur ;
-  - il a lancé les tests (pyshacl, rdflib) et vérifié les IRI DBpedia par script.
-- *Ce que j'ai décidé :*
-  - la règle selon laquelle les données suivent les questions, et non l'inverse ;
-  - l'organisation du binôme : on s'attribue une issue avant de travailler dessus, et l'assistant ne touche pas au travail de Salma ;
-  - en relisant Q7, j'ai vu que le départ utilisé n'existait pas dans nos données.
-- *Ce qui était faux dans ses propositions :*
-  - `sh:lessThan` interdisait les treks d'un jour ;
-  - la première règle de stock donnait de fausses alertes, et c'est Salma qui l'a corrigée ;
-  - des requêtes qui marchaient dans rdflib échouaient ou se dédoublaient dans Corese.
+**Imane.** J'ai utilisé Claude Code, un assistant en ligne de commande qui a accès au dépôt. Il m'a servi à :
+- comprendre des notions que je maîtrisais mal (listes RDF, SHACL-SPARQL, inférence) ;
+- obtenir une première version de certaines shapes, du catalogue et du générateur ;
+- lancer les tests avec pyshacl et rdflib, et vérifier les IRI DBpedia par script.
 
-  Aucun de ces problèmes n'était visible à la lecture. C'est en exécutant le code sur les outils du cours que nous les avons trouvés. Nous en concluons que la validation SHACL et les tests ont servi de garde-fou contre les erreurs de l'IA autant que contre les erreurs de saisie.
+Les décisions sont restées les nôtres. J'ai choisi de partir des questions métier et de n'ajouter que les données utiles à ces questions. J'ai organisé le travail pour que l'assistant n'intervienne pas dans la partie de Salma. En relisant Q7, j'ai remarqué qu'elle faisait référence à un départ qui n'existait pas dans nos données.
 
-**Salma : [outil].** [À COMPLÉTER par Salma : pour quoi elle l'a utilisé, ce qu'elle a vérifié ou corrigé elle-même.]
+Plusieurs propositions de l'outil étaient fausses :
+- `sh:lessThan` excluait les treks d'une journée ;
+- une première règle de stock donnait de fausses alertes, et c'est Salma qui l'a corrigée ;
+- des requêtes qui fonctionnaient dans rdflib échouaient ou donnaient des doublons dans Corese.
+
+Aucun de ces problèmes ne se voyait à la lecture. Nous les avons trouvés en exécutant le code dans les outils du cours, en testant des cas positifs et négatifs, et en relisant le travail de l'autre.
+
+**Salma.** [À écrire par Salma, à la première personne : l'outil utilisé ou non, pour quelles tâches, ce qu'elle a vérifié ou corrigé elle-même.]
+
+## Conclusion
+
+Le graphe compte 1 931 triplets. Il repose sur un vocabulaire RDFS de 28 classes et 53 propriétés, 24 shapes SHACL et quinze requêtes SPARQL, qui couvrent la vente, la planification, le matériel et le pilotage de l'agence.
+
+La principale leçon du projet : une requête ou une règle correcte dans un outil peut échouer ou donner un autre résultat dans un autre. Seuls les tests l'ont montré. Les deux améliorations les plus utiles seraient de publier nos IRI pour qu'elles soient déréférençables, et d'ajouter un niveau physique au profil client pour mieux recommander les treks.
