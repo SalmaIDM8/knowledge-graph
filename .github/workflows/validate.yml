@@ -1,5 +1,5 @@
-# Runs the SHACL validation of all data files on every pull request
-# and on every push to main. A red cross on the PR = the data is not valid.
+# Runs validate.py on every pull request and every push to main.
+
 name: SHACL validation
 
 on:

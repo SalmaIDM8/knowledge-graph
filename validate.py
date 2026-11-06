@@ -1,13 +1,5 @@
-"""Validate ALL data files (cto_data*.ttl) together against cto_shapes.ttl.
+# Validates all cto_data*.ttl files against cto_shapes.ttl with pyshacl.
 
-Usage:  python validate.py
-Needs:  pip install pyshacl
-
-The files are validated together so that links between them are checked:
-an IRI used in the operations data (d:french, d:trekTMB...) must be declared
-in the catalogue, and nothing may be declared twice.
-Exit code 0 = conforms (warnings allowed), 1 = violations.
-"""
 import glob
 import sys
 
@@ -30,7 +22,7 @@ conforms, _, report = validate(
     shacl_graph="cto_shapes.ttl",
     ont_graph="cto_schema.ttl",
     inference="rdfs",
-    allow_warnings=True,   # sh:Warning results do not make the data invalid
+    allow_warnings=True,
 )
 print(report)
 sys.exit(0 if conforms else 1)

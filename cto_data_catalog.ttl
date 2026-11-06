@@ -1,20 +1,6 @@
-###############################################################################
-#  CTO - Catalogue data
-#
-#  Places, hiking trails, treks (with their stages), tour packages, rental
-#  equipment and the reference lists shared with the operations data
-#  (languages, certifications, medical conditions).
-#
-#  Linked Open Data: owl:sameAs only between resources that ARE the same
-#  thing (places, trails), never between our commercial treks and DBpedia.
-#  Every DBpedia IRI below was checked on dbpedia.org (redirects followed);
-#  coordinates and altitudes are copied from DBpedia (geo:lat, geo:long,
-#  dbo:elevation / dbp:elevationM). Local places without a DBpedia page
-#  (huts, small villages) have no owl:sameAs.
-#
-#  Validate with:
-#     pyshacl -s cto_shapes.ttl -e cto_schema.ttl -i rdfs cto_data_catalog.ttl
-###############################################################################
+# Catalogue: places, trails, treks, packages, equipment and reference lists.
+# Places and trails (names, altitudes, coordinates etc.) copied from DBpedia (Oct. 2026).
+# Treks, packages and prices are our own products, based on real routes.
 
 @prefix cto:  <http://ns.cto-trekking.org/schema#> .
 @prefix d:    <http://ns.cto-trekking.org/data#> .
@@ -25,9 +11,7 @@
 @prefix dbr:  <http://dbpedia.org/resource/> .
 
 
-###############################################################################
 #  1. COUNTRIES
-###############################################################################
 
 d:france      a cto:Country ; rdfs:label "France"@en , "France"@fr ;      owl:sameAs dbr:France .
 d:italy       a cto:Country ; rdfs:label "Italy"@en , "Italie"@fr ;       owl:sameAs dbr:Italy .
@@ -36,24 +20,19 @@ d:spain       a cto:Country ; rdfs:label "Spain"@en , "Espagne"@fr ;      owl:sa
 d:nepal       a cto:Country ; rdfs:label "Nepal"@en , "Népal"@fr ;        owl:sameAs dbr:Nepal .
 d:peru        a cto:Country ; rdfs:label "Peru"@en , "Pérou"@fr ;         owl:sameAs dbr:Peru .
 d:morocco     a cto:Country ; rdfs:label "Morocco"@en , "Maroc"@fr ;      owl:sameAs dbr:Morocco .
-# Countries of clients only (no trek there)
 d:unitedKingdom a cto:Country ; rdfs:label "United Kingdom"@en , "Royaume-Uni"@fr ; owl:sameAs dbr:United_Kingdom .
 d:germany     a cto:Country ; rdfs:label "Germany"@en , "Allemagne"@fr ;  owl:sameAs dbr:Germany .
 d:belgium     a cto:Country ; rdfs:label "Belgium"@en , "Belgique"@fr ;   owl:sameAs dbr:Belgium .
 d:canada      a cto:Country ; rdfs:label "Canada"@en , "Canada"@fr ;      owl:sameAs dbr:Canada .
 
-# A region (neither a country nor a range): plain cto:Place
 d:corsica a cto:Place ;
     rdfs:label "Corsica"@en , "Corse"@fr ;
     owl:sameAs dbr:Corsica ;
     cto:locatedIn d:france .
 
 
-###############################################################################
 #  2. MOUNTAIN RANGES  (hierarchy through cto:locatedIn, queried with locatedIn+)
-###############################################################################
 
-# Alps: Alps > Graian Alps > Mont Blanc massif ; Alps > Southern Limestone Alps > Dolomites
 d:alps a cto:MountainRange ;
     rdfs:label "Alps"@en , "Alpes"@fr ;
     owl:sameAs dbr:Alps .
@@ -87,7 +66,6 @@ d:pyrenees a cto:MountainRange ;
     rdfs:label "Pyrenees"@en , "Pyrénées"@fr ;
     owl:sameAs dbr:Pyrenees .
 
-# Himalayas
 d:himalayas a cto:MountainRange ;
     rdfs:label "Himalayas"@en , "Himalaya"@fr ;
     owl:sameAs dbr:Himalayas .
@@ -102,7 +80,6 @@ d:annapurnaRange a cto:MountainRange ;
     owl:sameAs <http://dbpedia.org/resource/Annapurna_(mountain_range)> ;
     cto:locatedIn d:himalayas .
 
-# Andes
 d:andes a cto:MountainRange ;
     rdfs:label "Andes"@en , "Andes"@fr ;
     owl:sameAs dbr:Andes .
@@ -112,7 +89,6 @@ d:vilcabamba a cto:MountainRange ;
     owl:sameAs dbr:Vilcabamba_mountain_range ;
     cto:locatedIn d:andes .
 
-# Atlas
 d:atlas a cto:MountainRange ;
     rdfs:label "Atlas Mountains"@en , "Atlas"@fr ;
     owl:sameAs dbr:Atlas_Mountains .
@@ -122,15 +98,12 @@ d:highAtlas a cto:MountainRange ;
     owl:sameAs dbr:High_Atlas ;
     cto:locatedIn d:atlas .
 
-# Edge case: a range with no DBpedia page (no owl:sameAs)
 d:corsicanMountains a cto:MountainRange ;
     rdfs:label "Corsican mountains"@en , "montagnes corses"@fr ;
     cto:locatedIn d:corsica .
 
 
-###############################################################################
 #  3. SETTLEMENTS  (towns and villages: start/end points, overnight stops)
-###############################################################################
 
 # France
 d:chamonix a cto:Settlement ;
@@ -174,7 +147,6 @@ d:zermatt a cto:Settlement ;
     rdfs:label "Zermatt"@en ; owl:sameAs dbr:Zermatt ;
     cto:locatedIn d:switzerland ; geo:lat 46.0167 ; geo:long 7.7500 ; cto:altitude 1608.0 .
 
-# Nepal
 d:kathmandu a cto:Settlement ;
     rdfs:label "Kathmandu"@en , "Katmandou"@fr ; owl:sameAs dbr:Kathmandu ;
     cto:locatedIn d:nepal ; geo:lat 27.7100 ; geo:long 85.3200 ; cto:altitude 1400.0 .
@@ -199,7 +171,7 @@ d:jomsom a cto:Settlement ;
     rdfs:label "Jomsom"@en ; owl:sameAs dbr:Jomsom ;
     cto:locatedIn d:nepal ; geo:lat 28.7833 ; geo:long 83.7306 ; cto:altitude 2743.0 .
 
-# Peru  (edge case: Cusco has no coordinates in DBpedia -> no geo:lat/long)
+# edge case: Cusco has no coordinates in DBpedia so no geo:lat/long
 d:cusco a cto:Settlement ;
     rdfs:label "Cusco"@en , "Cuzco"@fr ; owl:sameAs dbr:Cusco ;
     cto:locatedIn d:peru ; cto:altitude 3399.0 .
@@ -208,7 +180,7 @@ d:aguasCalientes a cto:Settlement ;
     rdfs:label "Aguas Calientes"@en ; owl:sameAs <http://dbpedia.org/resource/Aguas_Calientes,_Peru> ;
     cto:locatedIn d:peru ; geo:lat -13.1547 ; geo:long -72.5253 ; cto:altitude 2040.0 .
 
-# Morocco  (edge case: Imlil has neither coordinates nor altitude in DBpedia)
+# edge case: Imlil has neither coordinates nor altitude in DBpedia
 d:imlil a cto:Settlement ;
     rdfs:label "Imlil"@en ; owl:sameAs dbr:Imlil ;
     cto:locatedIn d:morocco .
@@ -217,7 +189,6 @@ d:marrakesh a cto:Settlement ;
     rdfs:label "Marrakesh"@en , "Marrakech"@fr ; owl:sameAs dbr:Marrakesh ;
     cto:locatedIn d:morocco ; geo:lat 31.6300 ; geo:long -8.0089 ; cto:altitude 466.0 .
 
-# Villages on the Tour du Mont Blanc without a DBpedia page used here
 d:lesContamines a cto:Settlement ; rdfs:label "Les Contamines-Montjoie"@en ; cto:locatedIn d:france .
 d:lesChapieux   a cto:Settlement ; rdfs:label "Les Chapieux"@en ;            cto:locatedIn d:france .
 d:laFouly       a cto:Settlement ; rdfs:label "La Fouly"@en ;                cto:locatedIn d:switzerland .
@@ -225,8 +196,6 @@ d:champex       a cto:Settlement ; rdfs:label "Champex-Lac"@en ;             cto
 d:trient        a cto:Settlement ; rdfs:label "Trient"@en ;                  cto:locatedIn d:switzerland .
 d:treLeChamp    a cto:Settlement ; rdfs:label "Tré-le-Champ"@en ;            cto:locatedIn d:france .
 
-# Home towns of clients (cto:livesIn), used to compute distances to treks.
-# Edge case: Paris has no coordinates in DBpedia.
 d:paris      a cto:Settlement ; rdfs:label "Paris"@en ;      owl:sameAs dbr:Paris ;      cto:locatedIn d:france ; cto:altitude 78.0 .
 d:lyon       a cto:Settlement ; rdfs:label "Lyon"@en ;       owl:sameAs dbr:Lyon ;       cto:locatedIn d:france ; geo:lat 45.7600 ; geo:long 4.8400 .
 d:nice       a cto:Settlement ; rdfs:label "Nice"@en ;       owl:sameAs dbr:Nice ;       cto:locatedIn d:france ; geo:lat 43.7034 ; geo:long 7.2663 .
@@ -250,9 +219,7 @@ d:casablanca a cto:Settlement ; rdfs:label "Casablanca"@en ; owl:sameAs dbr:Casa
 d:lima       a cto:Settlement ; rdfs:label "Lima"@en ;       owl:sameAs dbr:Lima ;       cto:locatedIn d:peru ; geo:lat -12.0600 ; geo:long -77.0375 .
 
 
-###############################################################################
 #  4. SUMMITS, PASSES, HUTS AND SITES
-###############################################################################
 
 d:montBlanc a cto:Summit ;
     rdfs:label "Mont Blanc"@en , "mont Blanc"@fr ; owl:sameAs dbr:Mont_Blanc ;
@@ -270,7 +237,6 @@ d:vignemale a cto:Summit ;
     rdfs:label "Vignemale"@en ; owl:sameAs dbr:Vignemale ;
     cto:locatedIn d:pyrenees ; geo:lat 42.7767 ; geo:long -0.1431 ; cto:altitude 3298.0 .
 
-# Altitude of Everest: dbo:elevation of dbr:Himalayas (its highest point)
 d:everest a cto:Summit ;
     rdfs:label "Mount Everest"@en , "mont Everest"@fr ; owl:sameAs dbr:Mount_Everest ;
     cto:locatedIn d:mahalangurHimal ; geo:lat 27.9883 ; geo:long 86.9253 ; cto:altitude 8848.86 .
@@ -287,7 +253,6 @@ d:monteCinto a cto:Summit ;
     rdfs:label "Monte Cinto"@en ; owl:sameAs dbr:Monte_Cinto ;
     cto:locatedIn d:corsicanMountains ; geo:lat 42.3797 ; geo:long 8.9458 ; cto:altitude 2706.0 .
 
-# Passes and sites: plain cto:Place (not summits)
 d:thorongLa a cto:Place ;
     rdfs:label "Thorong La pass"@en , "col de Thorong La"@fr ; owl:sameAs dbr:Thorong_La ;
     cto:locatedIn d:annapurnaRange ; geo:lat 28.7935 ; geo:long 83.9388 ; cto:altitude 5416.0 .
@@ -305,7 +270,6 @@ d:deadWomansPass a cto:Place ;
     rdfs:label "Dead Woman's Pass (Warmiwañusca)"@en , "col de la Femme morte"@fr ;
     cto:locatedIn d:vilcabamba ; cto:altitude 4215.0 .
 
-# Mountain huts (no DBpedia page)
 d:refugeGouter     a cto:Place ; rdfs:label "Goûter hut"@en , "refuge du Goûter"@fr ;  cto:locatedIn d:montBlancMassif ; cto:altitude 3835.0 .
 d:rifugioElisabetta a cto:Place ; rdfs:label "Rifugio Elisabetta"@en ;                 cto:locatedIn d:italy .
 d:rifugioBonatti   a cto:Place ; rdfs:label "Rifugio Bonatti"@en ;                     cto:locatedIn d:italy .
@@ -316,9 +280,7 @@ d:pacaymayo        a cto:Place ; rdfs:label "Pacaymayo camp"@en ;               
 d:winayWayna       a cto:Place ; rdfs:label "Wiñay Wayna camp"@en ;                    cto:locatedIn d:peru .
 
 
-###############################################################################
-#  5. HIKING TRAILS  (the physical paths, owl:sameAs DBpedia)
-###############################################################################
+#  5. HIKING TRAILS
 
 d:trailTMB a cto:HikingTrail ;
     rdfs:label "Tour du Mont Blanc"@en , "Tour du Mont-Blanc"@fr ;
@@ -343,14 +305,11 @@ d:trailAnnapurnaCircuit a cto:HikingTrail ;
 d:trailHauteRoute a cto:HikingTrail ;
     rdfs:label "Haute Route"@en ; owl:sameAs dbr:Haute_Route .
 
-# Edge case: a trail that no trek follows yet
 d:trailAltaVia1 a cto:HikingTrail ;
     rdfs:label "Alta Via 1"@en ; owl:sameAs dbr:Alta_Via_1 .
 
 
-###############################################################################
 #  6. REFERENCE LISTS  (shared with cto_data_operations.ttl)
-###############################################################################
 
 d:french  a cto:Language ; rdfs:label "French"@en ,  "français"@fr .
 d:english a cto:Language ; rdfs:label "English"@en , "anglais"@fr .
@@ -379,9 +338,7 @@ d:vertigo           a cto:MedicalCondition ; rdfs:label "vertigo"@en ,          
 d:altitudeSickness  a cto:MedicalCondition ; rdfs:label "history of altitude sickness"@en , "antécédent de mal aigu des montagnes"@fr .
 
 
-###############################################################################
 #  7. RENTAL EQUIPMENT
-###############################################################################
 
 d:tent2p a cto:CampingGear ;
     rdfs:label "two-person tent"@en , "tente deux places"@fr ;
@@ -426,11 +383,8 @@ d:headlamp a cto:Equipment ;
     cto:stockQuantity 0 ; cto:dailyRentalPrice 2.0 .
 
 
-###############################################################################
 #  8. TREKS  (commercial products) AND THEIR STAGES
-###############################################################################
 
-# --- Tour du Mont Blanc, classic 11 days (3 countries, full itinerary) -------
 d:trekTMB a cto:HutToHutTrek ;
     rdfs:label "Tour du Mont Blanc - classic"@en , "Tour du Mont-Blanc - classique"@fr ;
     cto:followsTrail d:trailTMB ;
@@ -455,7 +409,6 @@ d:tmb9  a cto:Stage ; cto:dayNumber 9  ; cto:overnightAt d:treLeChamp .
 d:tmb10 a cto:Stage ; cto:dayNumber 10 ; cto:overnightAt d:refugeFlegere .
 d:tmb11 a cto:Stage ; cto:dayNumber 11 ; cto:passesBy d:chamonix ; cto:overnightAt d:lesHouches .
 
-# --- Same trail, shorter product (two treks can follow one trail) ------------
 d:trekTMBExpress a cto:HutToHutTrek ;
     rdfs:label "Tour du Mont Blanc - express"@en , "Tour du Mont-Blanc - express"@fr ;
     rdfs:comment "Highlights of the TMB in 6 days, with transfers between sections."@en ;
@@ -467,7 +420,6 @@ d:trekTMBExpress a cto:HutToHutTrek ;
     cto:requiresCertification d:certIML ;
     cto:notRecommendedFor d:kneeProblems .
 
-# --- Mont Blanc ascent: summit + glacier, technical gear --------------------
 d:trekMontBlanc a cto:SummitAscent ;
     rdfs:label "Mont Blanc ascent (normal route)"@en , "ascension du mont Blanc (voie normale)"@fr ;
     cto:inMountainRange d:montBlancMassif ;
@@ -483,7 +435,6 @@ d:trekMontBlanc a cto:SummitAscent ;
 d:mb1 a cto:Stage ; cto:dayNumber 1 ; cto:overnightAt d:refugeGouter .
 d:mb2 a cto:Stage ; cto:dayNumber 2 ; cto:passesBy d:montBlanc ; cto:overnightAt d:chamonix .
 
-# --- GR20: both hut-to-hut and camping (a resource can have several types) --
 d:trekGR20 a cto:HutToHutTrek , cto:CampingTrek ;
     rdfs:label "GR20 north to south"@en , "GR20 du nord au sud"@fr ;
     cto:followsTrail d:trailGR20 ;
@@ -495,7 +446,6 @@ d:trekGR20 a cto:HutToHutTrek , cto:CampingTrek ;
     cto:requiresEquipment d:tent2p , d:sleepingMat , d:trekkingPoles ;
     cto:notRecommendedFor d:kneeProblems , d:vertigo .
 
-# --- Everest base camp + Kala Patthar --------------------------------------
 d:trekEBC a cto:HutToHutTrek , cto:SummitAscent ;
     rdfs:label "Everest base camp and Kala Patthar"@en , "camp de base de l'Everest et Kala Patthar"@fr ;
     cto:inMountainRange d:mahalangurHimal ;
@@ -507,7 +457,6 @@ d:trekEBC a cto:HutToHutTrek , cto:SummitAscent ;
     cto:requiresEquipment d:sleepingBag , d:downJacket ;
     cto:notRecommendedFor d:heartCondition , d:asthma , d:altitudeSickness .
 
-# --- Annapurna circuit (crosses the Thorong La pass at 5416 m) --------------
 d:trekAnnapurna a cto:HutToHutTrek ;
     rdfs:label "Annapurna circuit"@en , "Tour des Annapurnas"@fr ;
     cto:followsTrail d:trailAnnapurnaCircuit ;
@@ -520,7 +469,6 @@ d:trekAnnapurna a cto:HutToHutTrek ;
     cto:requiresEquipment d:sleepingBag , d:downJacket , d:trekkingPoles ;
     cto:notRecommendedFor d:heartCondition , d:altitudeSickness .
 
-# --- Inca Trail: camping, 4 days -------------------------------------------
 d:trekIncaTrail a cto:CampingTrek ;
     rdfs:label "Inca Trail to Machu Picchu"@en , "Chemin de l'Inca jusqu'au Machu Picchu"@fr ;
     cto:followsTrail d:trailIncaTrail ;
@@ -538,7 +486,6 @@ d:inca2 a cto:Stage ; cto:dayNumber 2 ; cto:passesBy d:deadWomansPass ; cto:over
 d:inca3 a cto:Stage ; cto:dayNumber 3 ; cto:overnightAt d:winayWayna .
 d:inca4 a cto:Stage ; cto:dayNumber 4 ; cto:passesBy d:machuPicchu ; cto:overnightAt d:aguasCalientes .
 
-# --- Toubkal ascent: summit without technical gear, no trail ---------------
 d:trekToubkal a cto:SummitAscent ;
     rdfs:label "Toubkal ascent"@en , "ascension du Toubkal"@fr ;
     cto:inMountainRange d:highAtlas ;
@@ -553,7 +500,6 @@ d:trekToubkal a cto:SummitAscent ;
 d:toubkal1 a cto:Stage ; cto:dayNumber 1 ; cto:overnightAt d:refugeToubkal .
 d:toubkal2 a cto:Stage ; cto:dayNumber 2 ; cto:passesBy d:toubkal ; cto:overnightAt d:imlil .
 
-# --- Dolomites: easy, one day, plain cto:Trek (no subtype, no trail) --------
 d:trekTreCime a cto:Trek ;
     rdfs:label "Tre Cime di Lavaredo loop"@en , "tour des Tre Cime di Lavaredo"@fr ;
     cto:inMountainRange d:dolomites ;
@@ -562,7 +508,6 @@ d:trekTreCime a cto:Trek ;
     cto:basePrice 95.0 ;
     cto:requiresCertification d:certIML .
 
-# --- Pyrenees: Gavarnie and Vignemale ---------------------------------------
 d:trekVignemale a cto:SummitAscent , cto:CampingTrek ;
     rdfs:label "Gavarnie and Vignemale"@en , "Gavarnie et Vignemale"@fr ;
     cto:inMountainRange d:pyrenees ;
@@ -575,9 +520,7 @@ d:trekVignemale a cto:SummitAscent , cto:CampingTrek ;
     cto:notRecommendedFor d:vertigo .
 
 
-###############################################################################
 #  9. TOUR PACKAGES  (a trek + extras; basePrice = supplement per person)
-###############################################################################
 
 d:packTMBComfort a cto:TourPackage ;
     rdfs:label "TMB comfort: hotels and luggage transfer"@en ,
